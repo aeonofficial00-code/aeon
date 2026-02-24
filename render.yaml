@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: aeon-jewellery
+    env: node
+    plan: free
+    buildCommand: npm install && node db/migrate.js && node scripts/seed.js
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: aeon-db
+          property: connectionString
+      - key: GOOGLE_CLIENT_ID
+        sync: false   # Fill in Render dashboard
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false   # Fill in Render dashboard
+      - key: ADMIN_EMAILS
+        sync: false   # Your Gmail address(es), comma-separated
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ADMIN_PASSWORD
+        value: aeon2024
+      - key: APP_URL
+        sync: false   # Your Render app URL e.g. https://aeon-jewellery.onrender.com
+
+databases:
+  - name: aeon-db
+    plan: free
+    databaseName: aeon

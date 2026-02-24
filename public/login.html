@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign In – AEON Jewellery</title>
+    <meta name="description" content="Sign in to your AEON account to track orders and save your favourites." />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            flex-direction: column;
+        }
+
+        .login-bg {
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 60% 40%, rgba(201, 169, 110, 0.1) 0%, transparent 55%),
+                radial-gradient(ellipse at 15% 80%, rgba(201, 169, 110, 0.05) 0%, transparent 45%),
+                var(--dark);
+        }
+
+        /* Animated rings */
+        .ring {
+            position: fixed;
+            border-radius: 50%;
+            border: 1px solid rgba(201, 169, 110, 0.07);
+            pointer-events: none;
+            animation: rotate 20s linear infinite;
+        }
+
+        .ring:nth-child(1) {
+            width: 600px;
+            height: 600px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .ring:nth-child(2) {
+            width: 900px;
+            height: 900px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation-duration: 30s;
+            animation-direction: reverse;
+        }
+
+        .ring:nth-child(3) {
+            width: 1200px;
+            height: 1200px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation-duration: 45s;
+            border-color: rgba(201, 169, 110, 0.04);
+        }
+
+        .login-card {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 420px;
+            background: rgba(17, 17, 17, 0.92);
+            border: 1px solid rgba(201, 169, 110, 0.18);
+            border-radius: 24px;
+            padding: 52px 44px;
+            backdrop-filter: blur(24px);
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.6), 0 0 60px rgba(201, 169, 110, 0.04);
+            animation: scaleIn 0.5s ease;
+        }
+
+        .brand-logo {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 42px;
+            letter-spacing: 10px;
+            font-weight: 600;
+            display: block;
+            text-align: center;
+            margin-bottom: 6px;
+        }
+
+        .brand-tag {
+            display: block;
+            text-align: center;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 13px;
+            font-style: italic;
+            letter-spacing: 3px;
+            color: rgba(255, 255, 255, 0.45);
+            margin-bottom: 44px;
+        }
+
+        .divider-text {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 12px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin: 28px 0;
+        }
+
+        .divider-text::before,
+        .divider-text::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(201, 169, 110, 0.15);
+        }
+
+        .google-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            width: 100%;
+            padding: 16px 24px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(201, 169, 110, 0.2);
+            border-radius: 12px;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .google-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(201, 169, 110, 0.08), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .google-btn:hover {
+            border-color: var(--gold);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(201, 169, 110, 0.15);
+        }
+
+        .google-btn:hover::before {
+            opacity: 1;
+        }
+
+        .google-logo {
+            width: 22px;
+            height: 22px;
+            flex-shrink: 0;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 32px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.35);
+            letter-spacing: 0.5px;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: var(--gold);
+        }
+
+        .back-link span {
+            color: var(--gold);
+        }
+
+        .error-banner {
+            background: rgba(255, 80, 80, 0.1);
+            border: 1px solid rgba(255, 80, 80, 0.25);
+            border-radius: 10px;
+            padding: 12px 16px;
+            color: #ff8080;
+            font-size: 13px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .user-card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 20px;
+            background: rgba(201, 169, 110, 0.06);
+            border: 1px solid rgba(201, 169, 110, 0.15);
+            border-radius: 14px;
+            margin-bottom: 28px;
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--gold);
+        }
+
+        .user-info-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 18px;
+            color: #fff;
+        }
+
+        .user-info-email {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.45);
+            margin-top: 2px;
+        }
+
+        .btn-continue {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--gold-dark), var(--gold), var(--gold-light));
+            color: var(--dark);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(201, 169, 110, 0.25);
+            text-decoration: none;
+        }
+
+        .btn-continue:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(201, 169, 110, 0.4);
+        }
+
+        .btn-logout {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin-top: 12px;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-logout:hover {
+            border-color: rgba(255, 80, 80, 0.4);
+            color: #ff8080;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-bg"></div>
+    <div class="ring"></div>
+    <div class="ring"></div>
+    <div class="ring"></div>
+
+    <div class="login-card">
+        <span class="brand-logo gold-text">AEON</span>
+        <span class="brand-tag">Find your finest jewellery</span>
+
+        <!-- Error banner (from OAuth failure) -->
+        <div class="error-banner" id="error-banner" style="display:none;"></div>
+
+        <!-- Already logged in state -->
+        <div id="logged-in-state" style="display:none;">
+            <div class="user-card">
+                <img class="user-avatar" id="user-avatar" src="" alt="Profile" />
+                <div>
+                    <div class="user-info-name" id="user-name"></div>
+                    <div class="user-info-email" id="user-email"></div>
+                </div>
+            </div>
+            <a href="/" class="btn-continue">✦ Continue Shopping</a>
+            <button class="btn-logout" onclick="window.location.href='/auth/logout'">Sign out</button>
+        </div>
+
+        <!-- Signed-out state -->
+        <div id="signed-out-state">
+            <p
+                style="text-align:center;color:rgba(255,255,255,0.45);font-size:13px;line-height:1.7;margin-bottom:28px;">
+                Sign in to save your wishlist, track orders, and enjoy a personalised shopping experience.
+            </p>
+            <a href="/auth/google?redirect=home" class="google-btn">
+                <!-- Google logo SVG -->
+                <svg class="google-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                        fill="#4285F4" />
+                    <path
+                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                        fill="#34A853" />
+                    <path
+                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                        fill="#FBBC05" />
+                    <path
+                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                        fill="#EA4335" />
+                </svg>
+                Continue with Google
+            </a>
+            <div class="divider-text">or</div>
+            <p style="text-align:center;font-size:12px;color:rgba(255,255,255,0.3);line-height:1.8;">
+                By signing in you agree to our<br />
+                <span style="color:var(--gold);">Terms of Service</span> and <span style="color:var(--gold);">Privacy
+                    Policy</span>
+            </p>
+        </div>
+    </div>
+
+    <a href="/" class="back-link">← Back to <span>AEON</span></a>
+
+    <script>
+        // Check for error in URL
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('error')) {
+            const banner = document.getElementById('error-banner');
+            banner.style.display = 'block';
+            banner.textContent = params.get('error') === 'auth_failed'
+                ? 'Authentication failed. Please try again.'
+                : 'An error occurred. Please try again.';
+        }
+
+        // Check if already logged in
+        fetch('/auth/me').then(r => r.json()).then(({ user }) => {
+            if (user) {
+                document.getElementById('signed-out-state').style.display = 'none';
+                document.getElementById('logged-in-state').style.display = 'block';
+                document.getElementById('user-name').textContent = user.name;
+                document.getElementById('user-email').textContent = user.email;
+                if (user.avatar) document.getElementById('user-avatar').src = user.avatar;
+            }
+        }).catch(() => { });
+    </script>
+</body>
+
+</html>

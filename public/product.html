@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Product – AEON Jewellery</title>
+    <meta name="description" content="View product details at AEON Jewellery. Premium gold-plated jewellery." />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
+</head>
+
+<body>
+
+    <!-- NAV -->
+    <nav id="navbar" class="scrolled">
+        <div class="nav-inner">
+            <a href="/" class="nav-logo">AEON</a>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li><a href="/#collections">Collections</a></li>
+                <li><a href="/#about">About</a></li>
+            </ul>
+            <div class="nav-actions">
+                <div id="nav-user-slot" style="display:flex;align-items:center;"></div>
+                <button class="nav-icon-btn" id="cart-btn"><i data-lucide="shopping-bag"
+                        style="width:18px;height:18px;"></i><span class="cart-count" id="cart-count">0</span></button>
+                <div class="hamburger" id="hamburger"><span></span><span></span><span></span></div>
+            </div>
+        </div>
+    </nav>
+    <div class="mobile-menu" id="mobile-menu">
+        <a href="/" onclick="closeMobileMenu()">Home</a>
+        <a href="/#collections" onclick="closeMobileMenu()">Collections</a>
+    </div>
+
+    <!-- PRODUCT DETAIL -->
+    <div style="padding-top:var(--nav-height);">
+        <div class="product-detail">
+            <div class="container">
+                <!-- Breadcrumb -->
+                <div class="breadcrumb" style="justify-content:flex-start;margin-bottom:40px;" id="breadcrumb"></div>
+
+                <div class="product-detail-grid" id="product-content">
+                    <!-- Loading state -->
+                    <div class="product-gallery">
+                        <div class="main-image-wrap skeleton" style="aspect-ratio:1;height:500px;"></div>
+                        <div class="thumb-grid" style="margin-top:12px;">
+                            ${Array(4).fill('<div class="thumb skeleton" style="aspect-ratio:1;"></div>').join('')}
+                        </div>
+                    </div>
+                    <div class="product-detail-info">
+                        <div class="skeleton" style="height:14px;width:40%;margin-bottom:16px;"></div>
+                        <div class="skeleton" style="height:50px;width:80%;margin-bottom:24px;"></div>
+                        <div class="skeleton" style="height:36px;width:30%;margin-bottom:32px;"></div>
+                        <div class="skeleton" style="height:80px;width:100%;margin-bottom:24px;"></div>
+                        <div class="skeleton" style="height:48px;width:100%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RELATED PRODUCTS -->
+        <section style="padding:60px 0 100px;background:var(--dark-2);">
+            <div class="container">
+                <div style="text-align:center;margin-bottom:48px;" class="reveal">
+                    <p class="section-label">You Might Also Like</p>
+                    <h2 class="section-title">Related <span class="gold-text">Pieces</span></h2>
+                </div>
+                <div class="products-grid" id="related-grid"></div>
+            </div>
+        </section>
+    </div>
+
+    <!-- FOOTER -->
+    <footer style="padding:40px 0;">
+        <div class="container">
+            <div class="footer-bottom">
+                <a href="/" class="footer-logo" style="font-size:24px;display:inline-block;">AEON</a>
+                <p>© 2026 AEON Jewellery. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- CART -->
+    <div class="cart-overlay" id="cart-overlay"></div>
+    <div class="cart-drawer" id="cart-drawer">
+        <div class="cart-header">
+            <h3>CART</h3><button class="cart-close" id="cart-close"><i data-lucide="x"
+                    style="width:20px;height:20px;"></i></button>
+        </div>
+        <div class="cart-items" id="cart-items-list"></div>
+        <div class="cart-footer" id="cart-footer" style="display:none;">
+            <div class="cart-total">Total <span id="cart-total">₹0</span></div>
+            <button class="btn btn-gold" style="width:100%;justify-content:center;"><i data-lucide="shopping-bag"
+                    style="width:16px;height:16px;"></i> Checkout</button>
+        </div>
+    </div>
+    <div class="toast-container" id="toast-container"></div>
+    <button id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})"><i data-lucide="chevron-up"
+            style="width:20px;height:20px;"></i></button>
+
+    <!-- LIGHTBOX -->
+    <div id="lightbox"
+        style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:9000;align-items:center;justify-content:center;flex-direction:column;gap:20px;">
+        <button onclick="closeLightbox()"
+            style="position:absolute;top:20px;right:20px;color:#fff;font-size:28px;background:none;border:none;cursor:pointer;">✕</button>
+        <img id="lightbox-img" src="" alt=""
+            style="max-height:85vh;max-width:90vw;border-radius:12px;object-fit:contain;" />
+    </div>
+
+    <script src="/js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.lucide) lucide.createIcons();
+            initProductPage();
+        });
+
+        const params = new URLSearchParams(window.location.search);
+        const productId = params.get('id');
+
+        async function initProductPage() {
+            if (!productId) { window.location.href = '/'; return; }
+            try {
+                const product = await fetch(`/api/products/${productId}`).then(r => r.json());
+                renderProduct(product);
+                loadRelated(product.category, productId);
+            } catch (e) {
+                document.getElementById('product-content').innerHTML = '<p style="color:var(--text-muted);text-align:center;grid-column:1/-1;">Product not found.</p>';
+            }
+        }
+
+        function renderProduct(p) {
+            document.title = `${p.name} – AEON Jewellery`;
+
+            // Breadcrumb
+            document.getElementById('breadcrumb').innerHTML = `
+    <a href="/">Home</a><span>›</span>
+    <a href="category.html?c=${encodeURIComponent(p.category)}">${p.category}</a>
+    <span>›</span><span style="color:var(--text-light);">${p.name}</span>
+  `;
+
+            const images = p.images.length ? p.images : ['/images/placeholder.jpg'];
+            let currentImg = 0;
+
+            document.getElementById('product-content').innerHTML = `
+    <div class="product-gallery">
+      <div class="main-image-wrap" id="main-img-wrap" onclick="openLightbox('${images[0]}')">
+        <img id="main-img" src="${images[0]}" alt="${p.name}" />
+      </div>
+      ${images.length > 1 ? `<div class="thumb-grid">${images.map((img, i) =>
+                `<div class="thumb ${i === 0 ? 'active' : ''}" onclick="switchImg(${i}, this)" data-src="${img}">
+          <img src="${img}" alt="${p.name} view ${i + 1}" loading="lazy"/>
+        </div>`
+            ).join('')}</div>` : ''}
+    </div>
+
+    <div class="product-detail-info">
+      <p class="detail-category">${p.category}</p>
+      <h1 class="detail-name">${p.name}</h1>
+      <div class="detail-price">₹${p.price.toLocaleString('en-IN')} <span>incl. taxes</span></div>
+      <div class="divider-h"></div>
+      <p class="detail-desc">${p.description}</p>
+      <div class="detail-actions">
+        <button class="btn btn-gold" onclick='addToCartDirect(${JSON.stringify(p)})'>
+          <i data-lucide="shopping-bag" style="width:16px;height:16px;"></i> Add to Cart
+        </button>
+        <button class="btn btn-outline" onclick='addToWishlist()'>
+          <i data-lucide="heart" style="width:16px;height:16px;"></i>
+        </button>
+      </div>
+      <div class="detail-meta" style="margin-top:40px;">
+        <p><span>Category:</span> ${p.category}</p>
+        <p><span>Availability:</span> In Stock</p>
+        <p><span>Material:</span> Gold Plated</p>
+        <p><span>Care:</span> Store in cool, dry place. Avoid water contact.</p>
+      </div>
+    </div>
+  `;
+
+            if (window.lucide) lucide.createIcons();
+
+            // Expose thumb switch
+            window.switchImg = (idx, el) => {
+                document.querySelectorAll('.thumb').forEach(t => t.classList.remove('active'));
+                el.classList.add('active');
+                const src = el.dataset.src;
+                document.getElementById('main-img').src = src;
+                document.getElementById('main-img-wrap').onclick = () => openLightbox(src);
+            };
+
+            window.addToCartDirect = (prod) => { addToCart(prod); openCart(); };
+            window.addToWishlist = () => showToast('Wishlist feature coming soon! ✨');
+
+            setupReveal();
+        }
+
+        async function loadRelated(category, excludeId) {
+            try {
+                const products = await fetch(`/api/products?category=${encodeURIComponent(category)}`).then(r => r.json());
+                const related = products.filter(p => p.id !== excludeId).slice(0, 4);
+                if (!related.length) { document.querySelector('section:last-of-type').style.display = 'none'; return; }
+                const grid = document.getElementById('related-grid');
+                grid.innerHTML = related.map(p => renderProductCard(p)).join('');
+                setupReveal();
+                if (window.lucide) lucide.createIcons();
+            } catch (e) { }
+        }
+
+        function openLightbox(src) {
+            const lb = document.getElementById('lightbox');
+            document.getElementById('lightbox-img').src = src;
+            lb.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+        window.closeLightbox = () => {
+            document.getElementById('lightbox').style.display = 'none';
+            document.body.style.overflow = '';
+        };
+        document.getElementById('lightbox').addEventListener('click', e => {
+            if (e.target === e.currentTarget) closeLightbox();
+        });
+
+        function setupReveal() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+            }, { threshold: 0.08 });
+            document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+        }
+    </script>
+</body>
+
+</html>

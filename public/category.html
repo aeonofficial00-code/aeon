@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Collection – AEON Jewellery</title>
+    <meta name="description"
+        content="Browse AEON's curated jewellery collection. Gold-plated necklaces, bangles, earrings and more." />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
+</head>
+
+<body>
+
+    <!-- NAVIGATION -->
+    <nav id="navbar" class="scrolled">
+        <div class="nav-inner">
+            <a href="/" class="nav-logo">AEON</a>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li><a href="/#collections" class="active">Collections</a></li>
+                <li><a href="/#about">About</a></li>
+                <li><a href="https://www.instagram.com/aeon_.official" target="_blank">Instagram</a></li>
+            </ul>
+            <div class="nav-actions">
+                <div id="nav-user-slot" style="display:flex;align-items:center;"></div>
+                <button class="nav-icon-btn" id="cart-btn" aria-label="Cart">
+                    <i data-lucide="shopping-bag" style="width:18px;height:18px;"></i>
+                    <span class="cart-count" id="cart-count">0</span>
+                </button>
+                <div class="hamburger" id="hamburger"><span></span><span></span><span></span></div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MOBILE MENU -->
+    <div class="mobile-menu" id="mobile-menu">
+        <a href="/" onclick="closeMobileMenu()">Home</a>
+        <a href="/#collections" onclick="closeMobileMenu()">Collections</a>
+        <a href="/#about" onclick="closeMobileMenu()">About</a>
+        <a href="https://www.instagram.com/aeon_.official" target="_blank">Instagram</a>
+    </div>
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+        <div style="position:absolute;inset:0;overflow:hidden;">
+            <div id="header-bg-img"
+                style="width:100%;height:100%;background-size:cover;background-position:center;opacity:0.15;filter:blur(4px);">
+            </div>
+        </div>
+        <div class="page-header-content">
+            <div class="breadcrumb">
+                <a href="/">Home</a>
+                <span>›</span>
+                <span id="breadcrumb-cat">Collections</span>
+            </div>
+            <h1 id="page-title" class="gold-text">Collection</h1>
+            <p id="page-subtitle"></p>
+        </div>
+    </div>
+
+    <!-- PRODUCTS -->
+    <section style="padding:60px 0 100px;">
+        <div class="container">
+            <div class="filter-bar reveal">
+                <p id="product-count">Loading products…</p>
+                <select class="sort-select" id="sort-select">
+                    <option value="default">Featured First</option>
+                    <option value="price-asc">Price: Low to High</option>
+                    <option value="price-desc">Price: High to Low</option>
+                    <option value="name-asc">Name: A–Z</option>
+                </select>
+            </div>
+            <div class="products-grid" id="products-grid">
+                <!-- Skeletons -->
+                ${Array(6).fill('<div class="product-card">
+                    <div class="product-img-wrap skeleton" style="aspect-ratio:1;"></div>
+                    <div class="product-info">
+                        <div class="skeleton" style="height:12px;width:60%;margin-bottom:10px;"></div>
+                        <div class="skeleton" style="height:20px;width:80%;margin-bottom:8px;"></div>
+                        <div class="skeleton" style="height:18px;width:40%;"></div>
+                    </div>
+                </div>').join('')}
+            </div>
+            <div id="empty-state" class="empty-state" style="display:none;">
+                <h3>No Products Found</h3>
+                <p>This collection is being updated. Check back soon!</p>
+                <a href="/" class="btn btn-gold" style="margin-top:24px;">Back to Home</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ALL OTHER CATEGORIES -->
+    <section style="padding:60px 0;background:var(--dark-2);">
+        <div class="container">
+            <div style="text-align:center;margin-bottom:40px;" class="reveal">
+                <p class="section-label">Explore More</p>
+                <h2 class="section-title">Other <span class="gold-text">Collections</span></h2>
+            </div>
+            <div class="categories-grid" id="other-cats">
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="container">
+            <div class="footer-bottom">
+                <a href="/" class="footer-logo" style="font-size:24px;display:inline-block;">AEON</a>
+                <p>© 2026 AEON Jewellery. All rights reserved.</p>
+                <div class="social-links">
+                    <a href="https://www.instagram.com/aeon_.official" target="_blank"><i data-lucide="instagram"
+                            style="width:16px;height:16px;"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- CART -->
+    <div class="cart-overlay" id="cart-overlay"></div>
+    <div class="cart-drawer" id="cart-drawer">
+        <div class="cart-header">
+            <h3>CART</h3>
+            <button class="cart-close" id="cart-close"><i data-lucide="x" style="width:20px;height:20px;"></i></button>
+        </div>
+        <div class="cart-items" id="cart-items-list"></div>
+        <div class="cart-footer" id="cart-footer" style="display:none;">
+            <div class="cart-total">Total <span id="cart-total">₹0</span></div>
+            <button class="btn btn-gold" style="width:100%;justify-content:center;">
+                <i data-lucide="shopping-bag" style="width:16px;height:16px;"></i> Checkout
+            </button>
+        </div>
+    </div>
+    <div class="toast-container" id="toast-container"></div>
+    <button id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})"><i data-lucide="chevron-up"
+            style="width:20px;height:20px;"></i></button>
+
+    <script src="/js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.lucide) lucide.createIcons();
+            initCategoryPage();
+        });
+
+        const params = new URLSearchParams(window.location.search);
+        const catName = decodeURIComponent(params.get('c') || '');
+        let allProducts = [];
+
+        async function initCategoryPage() {
+            document.title = `${catName || 'Collection'} – AEON Jewellery`;
+            document.getElementById('page-title').textContent = catName || 'All Collections';
+            document.getElementById('breadcrumb-cat').textContent = catName || 'Collections';
+
+            const [products, allCats] = await Promise.all([
+                fetch(`/api/products?category=${encodeURIComponent(catName)}`).then(r => r.json()).catch(() => []),
+                fetch('/api/categories').then(r => r.json()).catch(() => [])
+            ]);
+
+            allProducts = products;
+
+            // Set header bg
+            if (products.length && products[0].images[0]) {
+                const bg = document.getElementById('header-bg-img');
+                bg.style.backgroundImage = `url('${products[0].images[0]}')`;
+                document.getElementById('page-subtitle').textContent = `${products.length} handpicked piece${products.length !== 1 ? 's' : ''} in this collection`;
+            }
+
+            // Sort
+            document.getElementById('sort-select').addEventListener('change', e => {
+                renderProducts(sortProducts([...allProducts], e.target.value));
+            });
+
+            renderProducts(products);
+
+            // Other categories
+            const others = allCats.filter(c => c.name !== catName).slice(0, 6);
+            const otherGrid = document.getElementById('other-cats');
+            otherGrid.innerHTML = others.map(cat => `
+    <div class="category-card reveal" onclick="location.href='category.html?c=${encodeURIComponent(cat.name)}'">
+      <img class="card-img" src="${cat.cover || ''}" alt="${cat.name}" loading="lazy"/>
+      <div class="card-overlay"></div><div class="card-border"></div>
+      <div class="card-content">
+        <p class="card-count">${cat.count} pieces</p>
+        <h3 class="card-name">${cat.name}</h3>
+        <span class="card-arrow">Explore →</span>
+      </div>
+    </div>
+  `).join('');
+
+            setupReveal();
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function sortProducts(arr, mode) {
+            if (mode === 'price-asc') return arr.sort((a, b) => a.price - b.price);
+            if (mode === 'price-desc') return arr.sort((a, b) => b.price - a.price);
+            if (mode === 'name-asc') return arr.sort((a, b) => a.name.localeCompare(b.name));
+            return arr.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
+        }
+
+        function renderProducts(products) {
+            const grid = document.getElementById('products-grid');
+            const empty = document.getElementById('empty-state');
+            document.getElementById('product-count').textContent = `${products.length} product${products.length !== 1 ? 's' : ''}`;
+            if (!products.length) { grid.innerHTML = ''; empty.style.display = 'block'; return; }
+            empty.style.display = 'none';
+            grid.innerHTML = products.map(p => renderProductCard(p)).join('');
+            setupReveal();
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function setupReveal() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+            }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+            document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+        }
+    </script>
+</body>
+
+</html>
