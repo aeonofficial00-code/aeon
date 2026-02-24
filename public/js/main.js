@@ -101,14 +101,15 @@ function showToast(message, duration = 3000) {
 
 // ── PRODUCT CARD RENDERER ─────────────────────────
 function renderProductCard(p) {
-  const img = p.images && p.images[0] ? p.images[0] : '';
+  // Use URL endpoint (thumb) preferring over raw images array
+  const img = p.thumb || (p.images && p.images[0]) || '';
   return `
     <div class="product-card reveal" onclick="location.href='product.html?id=${p.id}'">
       <div class="product-img-wrap">
         <img class="product-img" src="${img}" alt="${p.name}" loading="lazy" />
         ${p.featured ? '<span class="product-badge">Featured</span>' : ''}
         <div class="product-actions">
-          <button class="btn-cart" onclick="event.stopPropagation(); addToCart(${JSON.stringify(p).replace(/"/g, '&quot;')})">
+          <button class="btn-cart" onclick="event.stopPropagation(); addToCart(${JSON.stringify({ id: p.id, name: p.name, category: p.category, price: p.price, thumb: img }).replace(/"/g, '&quot;')})">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
             Add to Cart
           </button>
@@ -118,7 +119,7 @@ function renderProductCard(p) {
       <div class="product-info">
         <p class="product-category">${p.category}</p>
         <h3 class="product-name">${p.name}</h3>
-        <p class="product-price">₹${p.price.toLocaleString('en-IN')} <span>incl. taxes</span></p>
+        <p class="product-price">₹${parseFloat(p.price).toLocaleString('en-IN')} <span>incl. taxes</span></p>
       </div>
     </div>
   `;

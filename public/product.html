@@ -140,13 +140,15 @@
     <span>›</span><span style="color:var(--text-light);">${p.name}</span>
   `;
 
-            const images = p.images.length ? p.images : ['/images/placeholder.jpg'];
+            // Use imageUrls (URL endpoints) from new API
+            const images = (p.imageUrls && p.imageUrls.length) ? p.imageUrls : (p.images && p.images.length ? p.images : []);
+            const imgSrc = images.length ? images[0] : '';
             let currentImg = 0;
 
             document.getElementById('product-content').innerHTML = `
     <div class="product-gallery">
-      <div class="main-image-wrap" id="main-img-wrap" onclick="openLightbox('${images[0]}')">
-        <img id="main-img" src="${images[0]}" alt="${p.name}" />
+      <div class="main-image-wrap" id="main-img-wrap" onclick="openLightbox('${imgSrc}')">
+        <img id="main-img" src="${imgSrc}" alt="${p.name}" />
       </div>
       ${images.length > 1 ? `<div class="thumb-grid">${images.map((img, i) =>
                 `<div class="thumb ${i === 0 ? 'active' : ''}" onclick="switchImg(${i}, this)" data-src="${img}">
@@ -158,11 +160,11 @@
     <div class="product-detail-info">
       <p class="detail-category">${p.category}</p>
       <h1 class="detail-name">${p.name}</h1>
-      <div class="detail-price">₹${p.price.toLocaleString('en-IN')} <span>incl. taxes</span></div>
+      <div class="detail-price">₹${parseFloat(p.price).toLocaleString('en-IN')} <span>incl. taxes</span></div>
       <div class="divider-h"></div>
-      <p class="detail-desc">${p.description}</p>
+      <p class="detail-desc">${p.description || ''}</p>
       <div class="detail-actions">
-        <button class="btn btn-gold" onclick='addToCartDirect(${JSON.stringify(p)})'>
+        <button class="btn btn-gold" onclick='addToCartDirect(${JSON.stringify({ id: p.id, name: p.name, category: p.category, price: p.price, thumb: imgSrc })})'>
           <i data-lucide="shopping-bag" style="width:16px;height:16px;"></i> Add to Cart
         </button>
         <button class="btn btn-outline" onclick='addToWishlist()'>
