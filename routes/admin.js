@@ -1,43 +1,24 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
 const crypto = require('crypto');
 const pool = require('../db/pool');
 
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase());
 
-// ── Multer storage ────────────────────────────────────────────────────────────
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const dir = path.join(__dirname, '..', 'uploads');
-        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-        cb(null, dir);
-    },
-    filename: (req, file, cb) => {
-        cb(null, `${crypto.randomUUID()}${path.extname(file.originalname)}`);
-    }
-});
-const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
-
-// ── In-memory token store (maps token → email) ───────────────────────────────
-const validTokens = new Map(); // token → email
+// ── Token store ───────────────────────────────────────────────────────────────
+const validTokens = new Map();
 
 // ── Auth middleware ───────────────────────────────────────────────────────────
 function auth(req, res, next) {
     const token = req.headers['x-admin-token'];
-    // Accept token from simple login or Google OAuth session
-    if (token && validTokens.has(token)) return next();
-    if (req.session?.isAdmin && req.session?.adminToken === token) return next();
+    if (token && (validTokens.has(token) || req.session?.adminToken === token)) return next();
     return res.status(401).json({ error: 'Unauthorized' });
 }
 
-// ── POST /api/admin/login (password-based, kept as fallback) ─────────────────
+// ── POST /api/admin/login ─────────────────────────────────────────────────────
 router.post('/login', (req, res) => {
     const { password } = req.body;
-    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'aeon2024';
-    if (password === ADMIN_PASSWORD) {
+    if (password === (process.env.ADMIN_PASSWORD || 'aeon2024')) {
         const token = crypto.randomUUID();
         validTokens.set(token, 'admin');
         return res.json({ token });
@@ -47,96 +28,158 @@ router.post('/login', (req, res) => {
 
 // ── POST /api/admin/logout ────────────────────────────────────────────────────
 router.post('/logout', auth, (req, res) => {
-    const token = req.headers['x-admin-token'];
-    validTokens.delete(token);
+    validTokens.delete(req.headers['x-admin-token']);
     res.json({ message: 'Logged out' });
 });
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CATEGORIES
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── GET /api/admin/categories ─────────────────────────────────────────────────
+router.get('/categories', auth, async (req, res) => {
+    try {
+        const { rows } = await pool.query(`SELECT id, name, description, cover_name, created_at FROM categories ORDER BY name`);
+        // Return cover data URLs separately for listing (don't send base64 in list view)
+        res.json(rows);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── GET /api/admin/categories/:id/cover ──────────────────────────────────────
+router.get('/categories/:id/cover', async (req, res) => {
+    try {
+        const { rows } = await pool.query(`SELECT cover_data, cover_name FROM categories WHERE id=$1`, [req.params.id]);
+        if (!rows.length || !rows[0].cover_data) return res.status(404).send('');
+        const data = rows[0].cover_data.split(',');
+        const mime = data[0].split(':')[1].split(';')[0];
+        const buf = Buffer.from(data[1], 'base64');
+        res.set('Content-Type', mime).send(buf);
+    } catch (err) { res.status(500).send(''); }
+});
+
+// ── POST /api/admin/categories ────────────────────────────────────────────────
+router.post('/categories', auth, express.json({ limit: '25mb' }), async (req, res) => {
+    try {
+        const { name, description, cover_data, cover_name } = req.body;
+        if (!name) return res.status(400).json({ error: 'Name required' });
+        const { rows } = await pool.query(
+            `INSERT INTO categories (name, description, cover_data, cover_name)
+       VALUES ($1,$2,$3,$4) RETURNING id, name, description, cover_name, created_at`,
+            [name.trim(), description || '', cover_data || null, cover_name || null]
+        );
+        res.json(rows[0]);
+    } catch (err) {
+        if (err.code === '23505') return res.status(400).json({ error: 'Category already exists' });
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ── PUT /api/admin/categories/:id ────────────────────────────────────────────
+router.put('/categories/:id', auth, express.json({ limit: '25mb' }), async (req, res) => {
+    try {
+        const { name, description, cover_data, cover_name } = req.body;
+        const updates = [];
+        const vals = [];
+        if (name) { updates.push(`name=$${vals.push(name)}`); }
+        if (description !== undefined) { updates.push(`description=$${vals.push(description)}`); }
+        if (cover_data) { updates.push(`cover_data=$${vals.push(cover_data)}`); updates.push(`cover_name=$${vals.push(cover_name || '')}`); }
+        if (!updates.length) return res.status(400).json({ error: 'Nothing to update' });
+        vals.push(req.params.id);
+        const { rows } = await pool.query(
+            `UPDATE categories SET ${updates.join(',')} WHERE id=$${vals.length} RETURNING id, name, description, cover_name`,
+            vals
+        );
+        res.json(rows[0]);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── DELETE /api/admin/categories/:id ─────────────────────────────────────────
+router.delete('/categories/:id', auth, async (req, res) => {
+    try {
+        const { rows } = await pool.query(`SELECT name FROM categories WHERE id=$1`, [req.params.id]);
+        if (!rows.length) return res.status(404).json({ error: 'Not found' });
+        await pool.query(`DELETE FROM categories WHERE id=$1`, [req.params.id]);
+        res.json({ message: 'Deleted' });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PRODUCTS
+// ══════════════════════════════════════════════════════════════════════════════
 
 // ── GET /api/admin/products ───────────────────────────────────────────────────
 router.get('/products', auth, async (req, res) => {
     try {
-        const { rows } = await pool.query(`SELECT * FROM products ORDER BY created_at DESC`);
+        const { rows } = await pool.query(`SELECT id, name, category, price, description, featured, created_at FROM products ORDER BY created_at DESC`);
         res.json(rows);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Database error' });
-    }
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ── POST /api/admin/products ──────────────────────────────────────────────────
-router.post('/products', auth, upload.array('images', 10), async (req, res) => {
+// ── GET /api/admin/products/:id/images ───────────────────────────────────────
+// Returns just the images array (base64) for a product
+router.get('/products/:id/images', auth, async (req, res) => {
     try {
-        const { name, category, price, description, featured } = req.body;
-        const images = (req.files || []).map(f => `/uploads/${f.filename}`);
+        const { rows } = await pool.query(`SELECT images FROM products WHERE id=$1`, [req.params.id]);
+        if (!rows.length) return res.status(404).json({ error: 'Not found' });
+        res.json({ images: rows[0].images || [] });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── POST /api/admin/products – base64 JSON body ───────────────────────────────
+router.post('/products', auth, express.json({ limit: '50mb' }), async (req, res) => {
+    try {
+        const { name, category, price, description, featured, images } = req.body;
+        if (!name || !category) return res.status(400).json({ error: 'Name and category are required' });
         const { rows } = await pool.query(
             `INSERT INTO products (name, category, price, description, images, featured)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-            [name, category, parseFloat(price) || 0, description || '', JSON.stringify(images), featured === 'true']
+       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+            [name, category, parseFloat(price) || 0, description || '', JSON.stringify(images || []), featured === true || featured === 'true']
         );
-        // Upsert category
+        // Ensure category entry exists
         await pool.query(`INSERT INTO categories (name) VALUES ($1) ON CONFLICT (name) DO NOTHING`, [category]);
         res.json(rows[0]);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Database error' });
-    }
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ── PUT /api/admin/products/:id ───────────────────────────────────────────────
-router.put('/products/:id', auth, upload.array('images', 10), async (req, res) => {
+router.put('/products/:id', auth, express.json({ limit: '50mb' }), async (req, res) => {
     try {
-        const { name, category, price, description, featured, keepImages } = req.body;
-        const newFiles = (req.files || []).map(f => `/uploads/${f.filename}`);
-
-        // Get existing images
-        const { rows: existing } = await pool.query(`SELECT images FROM products WHERE id = $1`, [req.params.id]);
-        if (!existing.length) return res.status(404).json({ error: 'Not found' });
-
-        const existingImages = keepImages === 'false' ? [] : (existing[0].images || []);
-        const images = [...existingImages, ...newFiles];
-
+        const { name, category, price, description, featured, images } = req.body;
         const { rows } = await pool.query(
             `UPDATE products SET
         name = COALESCE($1, name),
         category = COALESCE($2, category),
         price = COALESCE($3, price),
         description = COALESCE($4, description),
-        images = $5,
+        images = COALESCE($5::jsonb, images),
         featured = COALESCE($6, featured),
         updated_at = NOW()
        WHERE id = $7 RETURNING *`,
-            [name, category, price ? parseFloat(price) : null, description, JSON.stringify(images), featured !== undefined ? featured === 'true' : null, req.params.id]
+            [name || null, category || null, price ? parseFloat(price) : null, description || null,
+            images ? JSON.stringify(images) : null, featured !== undefined ? (featured === true || featured === 'true') : null,
+            req.params.id]
         );
+        if (!rows.length) return res.status(404).json({ error: 'Not found' });
         res.json(rows[0]);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Database error' });
-    }
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ── DELETE /api/admin/products/:id ────────────────────────────────────────────
 router.delete('/products/:id', auth, async (req, res) => {
     try {
-        const result = await pool.query(`DELETE FROM products WHERE id = $1`, [req.params.id]);
-        if (result.rowCount === 0) return res.status(404).json({ error: 'Not found' });
+        const result = await pool.query(`DELETE FROM products WHERE id=$1`, [req.params.id]);
+        if (!result.rowCount) return res.status(404).json({ error: 'Not found' });
         res.json({ message: 'Deleted' });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Database error' });
-    }
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ── GET /api/admin/users ──────────────────────────────────────────────────────
 router.get('/users', auth, async (req, res) => {
     try {
-        const { rows } = await pool.query(`SELECT id, email, name, avatar, role, created_at FROM users ORDER BY created_at DESC`);
+        const { rows } = await pool.query(`SELECT id, email, name, role, created_at FROM users ORDER BY created_at DESC`);
         res.json(rows);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Database error' });
-    }
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ── Export token store (for Google OAuth to register new tokens) ──────────────
 module.exports = router;
 module.exports.validTokens = validTokens;

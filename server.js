@@ -96,9 +96,14 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // ── Static files ──────────────────────────────────────────────────────────────
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
 app.use('/categoriess', express.static(path.join(__dirname, 'categoriess')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Explicit page routes (so /login and /admin work without .html)
+app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
+app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin', 'index.html')));
+app.get('/admin/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin', 'dashboard.html')));
 
 // Ensure uploads dir
 const uploadsDir = path.join(__dirname, 'uploads');

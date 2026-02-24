@@ -1,7 +1,7 @@
 /**
- * scripts/seed.js – Walks categoriess/ folder and seeds products into PostgreSQL.
- * Skips existing products (ON CONFLICT DO NOTHING by image URL check).
- * Safe to run multiple times.
+ * scripts/seed.js
+ * Reads all images from categoriess/ folder and stores them as base64
+ * data URLs directly in PostgreSQL — so images persist on Render.
  */
 require('dotenv').config();
 const fs = require('fs');
@@ -22,61 +22,76 @@ const priceRanges = {
     'Gold plated Rings': [699, 1299],
     'Gold plated bangles': [899, 1799],
     'MANTRA COLLECTION': [1299, 2499],
-    "Men's collection": [999, 2499],
+    "Men\u2019s collection": [999, 2499],
     'Wedding set': [3499, 6999]
 };
 
 const descriptions = {
-    'AD NECKLACE': 'Stunning American Diamond necklace, perfect for weddings and special occasions.',
-    'AEON signature Sp Collection': 'Exclusive AEON signature pieces crafted with premium materials and elegant design.',
-    'Anklets': 'Delicate gold-plated anklets that add a charming touch to every step.',
+    'AD NECKLACE': 'Stunning American Diamond necklace, crafted for weddings and celebrations.',
+    'AEON signature Sp Collection': 'Exclusive AEON signature pieces with premium design and finish.',
+    'Anklets': 'Delicate gold-plated anklets that add charm to every step.',
     'Anti- tarnish bangles': 'Premium anti-tarnish bangles that retain their golden shine for years.',
     'Anti- tarnish watch Bangles': 'Elegant watch bangles with anti-tarnish coating – timeless and durable.',
     'Earrings': 'Exquisite earrings for every occasion from casual to bridal.',
-    'GOLD LAYERED HARAM': 'Royal gold-layered haram necklace, a statement piece for festive wear.',
-    'Gold plated Necklaces': 'Elegant gold-plated necklaces that radiate sophistication.',
+    'GOLD LAYERED HARAM': 'Royal gold-layered haram necklace – a statement piece for festive wear.',
+    'Gold plated Necklaces': 'Elegant gold-plated necklaces radiating sophistication.',
     'Gold plated Rings': 'Stunning gold-plated rings with intricate designs for a royal look.',
-    'Gold plated bangles': 'Classic gold-plated bangles, perfect for daily wear or special occasions.',
+    'Gold plated bangles': 'Classic gold-plated bangles, perfect for daily or special occasions.',
     'MANTRA COLLECTION': 'Spiritual and stylish Mantra collection – wear your intentions.',
-    "Men's collection": 'Bold and contemporary jewellery designed exclusively for men.',
+    "Men\u2019s collection": 'Bold and contemporary jewellery designed exclusively for men.',
     'Wedding set': 'Complete bridal jewellery sets curated for your most special day.'
 };
 
-function randomPrice([min, max]) {
-    const raw = Math.floor(Math.random() * (max - min + 1)) + min;
-    return Math.round(raw / 99) * 99 + 99;
-}
+const suffixes = ['Classic', 'Elite', 'Royal', 'Luxe', 'Signature', 'Premium', 'Heritage', 'Grace', 'Opulent', 'Regal'];
 
+function randomPrice([min, max]) {
+    return Math.round((Math.floor(Math.random() * (max - min + 1)) + min) / 99) * 99 + 99;
+}
 function productName(cat, idx) {
-    const suffixes = ['Classic', 'Elite', 'Royal', 'Luxe', 'Signature', 'Premium', 'Heritage', 'Grace', 'Opulent', 'Regal'];
-    const cleanCat = cat.replace(/[^a-zA-Z ]/g, '').trim().split(' ').slice(-1)[0];
-    return `AEON ${cleanCat} – ${suffixes[idx % suffixes.length]} Edition`;
+    const word = cat.replace(/[^a-zA-Z ]/g, '').trim().split(' ').pop();
+    return `AEON ${word} – ${suffixes[idx % suffixes.length]} Edition`;
+}
+function fileToBase64(filePath) {
+    try {
+        const buf = fs.readFileSync(filePath);
+        const ext = path.extname(filePath).toLowerCase().replace('.', '');
+        const mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' :
+            ext === 'png' ? 'image/png' :
+                ext === 'webp' ? 'image/webp' : 'image/jpeg';
+        return `data:${mime};base64,${buf.toString('base64')}`;
+    } catch { return null; }
+}
+function collectImages(dir, depth = 0) {
+    if (depth > 3) return [];
+    let imgs = [];
+    for (const f of fs.readdirSync(dir)) {
+        const full = path.join(dir, f);
+        const stat = fs.statSync(full);
+        if (stat.isDirectory()) imgs = imgs.concat(collectImages(full, depth + 1));
+        else if (/\.(png|jpg|jpeg|webp|gif)$/i.test(f)) imgs.push(full);
+    }
+    return imgs;
 }
 
 async function seed() {
     const client = await pool.connect();
     try {
-        // Ensure extension + tables exist (lightweight inline version)
+        // Ensure tables
         await client.query(`CREATE EXTENSION IF NOT EXISTS "pgcrypto"`);
         await client.query(`
-      CREATE TABLE IF NOT EXISTS products (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        name VARCHAR(500) NOT NULL,
-        category VARCHAR(255) NOT NULL,
-        price DECIMAL(10,2) NOT NULL DEFAULT 0,
-        description TEXT,
-        images JSONB NOT NULL DEFAULT '[]',
-        featured BOOLEAN NOT NULL DEFAULT FALSE,
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        updated_at TIMESTAMPTZ DEFAULT NOW()
+      CREATE TABLE IF NOT EXISTS categories (
+        id SERIAL PRIMARY KEY, name VARCHAR(255) UNIQUE NOT NULL,
+        description TEXT, cover_data TEXT, cover_name VARCHAR(500),
+        created_at TIMESTAMPTZ DEFAULT NOW()
       )
     `);
         await client.query(`
-      CREATE TABLE IF NOT EXISTS categories (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(255) UNIQUE NOT NULL,
-        description TEXT,
-        created_at TIMESTAMPTZ DEFAULT NOW()
+      CREATE TABLE IF NOT EXISTS products (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name VARCHAR(500) NOT NULL, category VARCHAR(255) NOT NULL,
+        price DECIMAL(10,2) NOT NULL DEFAULT 0, description TEXT,
+        images JSONB NOT NULL DEFAULT '[]', featured BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
       )
     `);
 
@@ -84,53 +99,64 @@ async function seed() {
             fs.statSync(path.join(categoriesDir, f)).isDirectory()
         );
 
-        let inserted = 0;
+        let insertedProducts = 0;
+        let insertedCats = 0;
+
         for (const cat of catDirs) {
-            // Upsert category
-            await client.query(
-                `INSERT INTO categories (name, description) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING`,
-                [cat, descriptions[cat] || '']
-            );
-
             const catDir = path.join(categoriesDir, cat);
-            const files = fs.readdirSync(catDir).filter(f => /\.(png|jpg|jpeg|webp|gif)$/i.test(f));
+            const allImages = collectImages(catDir);
+            if (!allImages.length) continue;
 
+            const coverData = fileToBase64(allImages[0]);
+
+            // Upsert category with cover image
+            const catRes = await client.query(
+                `INSERT INTO categories (name, description, cover_data, cover_name)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (name) DO UPDATE SET
+           description = EXCLUDED.description,
+           cover_data = CASE WHEN categories.cover_data IS NULL THEN EXCLUDED.cover_data ELSE categories.cover_data END
+         RETURNING id, name`,
+                [cat, descriptions[cat] || cat, coverData, path.basename(allImages[0])]
+            );
+            if (catRes.rows[0]) insertedCats++;
+
+            // Group images into products (2 images per product)
             let idx = 0;
-            for (let i = 0; i < files.length;) {
-                const take = Math.min(2, files.length - i);
-                const imgs = [];
-                for (let j = 0; j < take; j++) {
-                    imgs.push(`/categoriess/${encodeURIComponent(cat)}/${encodeURIComponent(files[i])}`);
-                    i++;
+            for (let i = 0; i < allImages.length;) {
+                const take = Math.min(2, allImages.length - i);
+                const imgData = [];
+                for (let j = 0; j < take; j++, i++) {
+                    const b64 = fileToBase64(allImages[i]);
+                    if (b64) imgData.push(b64);
                 }
-                const price = randomPrice(priceRanges[cat] || [999, 2499]);
+                if (!imgData.length) continue;
+
                 const name = productName(cat, idx);
+                const price = randomPrice(priceRanges[cat] || [999, 2499]);
                 const featured = idx === 0;
 
-                // Check if product with same first image already exists
-                const exists = await client.query(
-                    `SELECT 1 FROM products WHERE images->0 = $1 LIMIT 1`,
-                    [JSON.stringify(imgs[0])]
-                );
-                if (exists.rows.length === 0) {
+                // Check by name to avoid duplicates
+                const exists = await client.query(`SELECT 1 FROM products WHERE name=$1 LIMIT 1`, [name]);
+                if (!exists.rows.length) {
                     await client.query(
                         `INSERT INTO products (name, category, price, description, images, featured)
-             VALUES ($1, $2, $3, $4, $5, $6)`,
-                        [name, cat, price, descriptions[cat] || '', JSON.stringify(imgs), featured]
+             VALUES ($1,$2,$3,$4,$5,$6)`,
+                        [name, cat, price, descriptions[cat] || '', JSON.stringify(imgData), featured]
                     );
-                    inserted++;
+                    insertedProducts++;
                 }
                 idx++;
             }
         }
-        console.log(`✅ Seeded ${inserted} products from ${catDirs.length} categories.`);
+        console.log(`✅ Seeded ${insertedCats} categories and ${insertedProducts} products (images stored in DB).`);
+    } catch (err) {
+        console.error('❌ Seed failed:', err.message);
+        throw err;
     } finally {
         client.release();
         await pool.end();
     }
 }
 
-seed().catch(err => {
-    console.error('Seed failed:', err.message);
-    process.exit(1);
-});
+seed().catch(err => { console.error(err); process.exit(1); });
