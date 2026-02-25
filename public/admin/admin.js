@@ -144,6 +144,17 @@ function openAddProductModal() {
     document.getElementById('product-modal').classList.add('open');
 }
 
+function syncStock() {
+    const stockVal = document.getElementById('p-stock').value;
+    const statusEl = document.getElementById('p-stock-status');
+    if (stockVal === '0') {
+        statusEl.value = 'out_of_stock';
+    } else if (stockVal !== '' && parseInt(stockVal) > 0) {
+        if (statusEl.value === 'out_of_stock') statusEl.value = 'in_stock';
+    }
+}
+document.getElementById('p-stock')?.addEventListener('input', syncStock);
+
 async function openEditProductModal(id) {
     editMode = true;
     const res = await apiFetch(`/api/admin/products/${id}/images`);

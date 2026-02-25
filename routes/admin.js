@@ -159,13 +159,18 @@ router.post('/products', auth, express.json({ limit: '50mb' }), async (req, res)
     try {
         const { name, category, price, description, featured, images, stock, stock_status } = req.body;
         if (!name || !category) return res.status(400).json({ error: 'Name and category are required' });
+        const stockVal = stock !== undefined && stock !== '' ? parseInt(stock) : null;
+        let finalStatus = stock_status || 'in_stock';
+        if (stockVal === 0) finalStatus = 'out_of_stock';
+        else if (stockVal > 0 && finalStatus === 'out_of_stock') finalStatus = 'in_stock';
+
         const { rows } = await pool.query(
             `INSERT INTO products (name, category, price, description, images, featured, stock, stock_status)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
             [name, category, parseFloat(price) || 0, description || '', JSON.stringify(images || []),
                 featured === true || featured === 'true',
-                stock !== undefined && stock !== '' ? parseInt(stock) : null,
-                stock_status || 'in_stock']
+                stockVal,
+                finalStatus]
         );
         await pool.query(`INSERT INTO categories (name) VALUES ($1) ON CONFLICT (name) DO NOTHING`, [category]);
         res.json(rows[0]);
@@ -178,6 +183,10 @@ router.put('/products/:id', auth, express.json({ limit: '50mb' }), async (req, r
         const { name, category, price, description, featured, images, stock, stock_status, is_on_sale, sale_price } = req.body;
         const stockVal = (stock !== undefined && stock !== '') ? parseInt(stock) : null;
         const salePriceVal = (sale_price !== undefined && sale_price !== '') ? parseFloat(sale_price) : null;
+        let finalStatus = stock_status || null;
+        if (stockVal === 0) finalStatus = 'out_of_stock';
+        else if (stockVal > 0 && finalStatus === 'out_of_stock') finalStatus = 'in_stock';
+
         const { rows } = await pool.query(
             `UPDATE products SET
         name        = COALESCE($1, name),
@@ -195,7 +204,7 @@ router.put('/products/:id', auth, express.json({ limit: '50mb' }), async (req, r
             [name || null, category || null, price ? parseFloat(price) : null, description || null,
             images ? JSON.stringify(images) : null,
             featured !== undefined ? (featured === true || featured === 'true') : null,
-                stockVal, stock_status || null,
+                stockVal, finalStatus,
             is_on_sale !== undefined ? (is_on_sale === true || is_on_sale === 'true') : null,
                 salePriceVal,
             req.params.id]
