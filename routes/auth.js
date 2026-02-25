@@ -27,7 +27,7 @@ router.get('/google/callback',
                 // Issue an admin session token stored in the session
                 req.session.adminToken = require('crypto').randomBytes(32).toString('hex');
                 req.session.isAdmin = true;
-                return res.redirect('/admin/dashboard.html?auth=google');
+                return res.redirect('/admin/?auth=google');
             } else {
                 return res.redirect('/admin/?error=not_admin');
             }
