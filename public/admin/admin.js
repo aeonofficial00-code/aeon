@@ -11,8 +11,21 @@ let isFeatured = false;
 let currentTab = 'products';
 
 // ── AUTH ─────────────────────────────────────
-function checkAuth() {
-    const token = sessionStorage.getItem(TOKEN_KEY);
+async function checkAuth() {
+    let token = sessionStorage.getItem(TOKEN_KEY);
+    if (!token) {
+        // Fallback: try getting token from server session (Google OAuth flow)
+        try {
+            const res = await fetch('/auth/admin-token');
+            if (res.ok) {
+                const data = await res.json();
+                if (data.token) {
+                    sessionStorage.setItem(TOKEN_KEY, data.token);
+                    token = data.token;
+                }
+            }
+        } catch (e) { }
+    }
     if (!token) { window.location.href = '/admin/'; return; }
     loadDashboard();
 }
