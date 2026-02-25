@@ -266,6 +266,20 @@
 
     <script src="/js/main.js"></script>
     <script>
+        async function cancelOrder(orderId) {
+            if (!confirm('Are you sure you want to cancel this order? This action cannot be undone.')) return;
+            try {
+                const res = await fetch(`/api/orders/${orderId}/cancel`, { method: 'POST' });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to cancel order');
+                showToast('Order successfully cancelled', 'success');
+                // Reload page to reflect changes instantly
+                setTimeout(() => window.location.reload(), 1500);
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
             loadUserState();
             const container = document.getElementById('orders-container');
@@ -273,20 +287,20 @@
                 const res = await fetch('/api/orders/my');
                 if (res.status === 401) {
                     container.innerHTML = `<div class="no-orders">
-            <p style="font-size:40px">🔐</p>
-            <h3>Sign In to View Orders</h3>
-            <p style="margin-bottom:24px">Please sign in to see your order history.</p>
-            <a href="/login" class="btn btn-gold">Sign In</a>
-          </div>`; return;
+        <p style="font-size:40px">🔐</p>
+        <h3>Sign In to View Orders</h3>
+        <p style="margin-bottom:24px">Please sign in to see your order history.</p>
+        <a href="/login" class="btn btn-gold">Sign In</a>
+    </div>`; return;
                 }
                 const orders = await res.json();
                 if (!orders.length) {
                     container.innerHTML = `<div class="no-orders">
-            <p style="font-size:40px">🛍️</p>
-            <h3>No Orders Yet</h3>
-            <p style="margin-bottom:24px">Start shopping to see your orders here.</p>
-            <a href="/" class="btn btn-gold">Shop Now</a>
-          </div>`; return;
+        <p style="font-size:40px">🛍️</p>
+        <h3>No Orders Yet</h3>
+        <p style="margin-bottom:24px">Start shopping to see your orders here.</p>
+        <a href="/" class="btn btn-gold">Shop Now</a>
+    </div>`; return;
                 }
                 container.innerHTML = orders.map(order => {
                     const items = order.items || [];
@@ -296,30 +310,40 @@
                         delivered: 'status-delivered', shipped: 'status-shipped',
                         processing: 'status-processing', cancelled: 'status-cancelled'
                     }[order.status] || 'status-pending';
+
+                    const canCancel = ['pending', 'paid', 'processing'].includes(order.status);
+
                     return `
-          <div class="order-card">
-            <div class="order-header">
-              <div>
+    <div class="order-card">
+        <div class="order-header">
+            <div>
                 <div class="order-id">ORDER #${order.id.slice(0, 8).toUpperCase()}</div>
-                <div class="order-date">${new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
-              </div>
-              <span class="status-badge ${statusClass}">${order.status}</span>
+                <div class="order-date">${new Date(order.created_at).toLocaleDateString('en-IN', {
+                        day: 'numeric',
+                        month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                    })}</div>
             </div>
-            <div class="order-items-preview">
-              ${items.slice(0, 5).map(i => `<img class="order-thumb" src="${i.thumb || ''}" alt="${i.name}" onerror="this.src='';this.style.display='none'"/>`).join('')}
-              ${items.length > 5 ? `<div class="order-thumb" style="display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--gold);">+${items.length - 5}</div>` : ''}
-            </div>
-            <div class="order-footer">
-              <div>
+            <span class="status-badge ${statusClass}">${order.status}</span>
+        </div>
+        <div class="order-items-preview">
+            ${items.slice(0, 5).map(i => `<img class="order-thumb" src="${i.thumb || ''}" alt="${i.name}"
+                onerror="this.src='';this.style.display='none'" />`).join('')}
+            ${items.length > 5 ? `<div class="order-thumb"
+                style="display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--gold);">
+                +${items.length - 5}</div>` : ''}
+        </div>
+        <div class="order-footer">
+            <div>
                 <div class="order-total"><small>Total Paid</small>₹${parseFloat(order.total).toLocaleString('en-IN')}</div>
                 ${order.delivery_charge == 0 ? '<div style="font-size:10px;color:#5cb85c;margin-top:3px;letter-spacing:0.5px;">Free Delivery</div>' : ''}
-              </div>
-              <div class="order-addr">
-                📦 ${addr.name || ''}<br/>
-                ${addr.city || ''}, ${addr.state || ''} ${addr.pincode || ''}
-              </div>
+                ${canCancel ? `<button class="btn btn-outline" style="margin-top:12px;padding:6px 14px;font-size:11px;letter-spacing:1px;border-color:rgba(217,83,79,0.5);color:#d9534f;" onclick="cancelOrder('${order.id}')">Cancel Order</button>` : ''}
             </div>
-          </div>`;
+            <div class="order-addr">
+                📦 ${addr.name || ''}<br />
+                ${addr.city || ''}, ${addr.state || ''} ${addr.pincode || ''}
+            </div>
+        </div>
+    </div>`;
                 }).join('');
             } catch (e) {
                 container.innerHTML = `<div class="no-orders"><p>Could not load orders. Please try again.</p></div>`;

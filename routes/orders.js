@@ -143,4 +143,23 @@ router.get('/:id', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ── POST /api/orders/:id/cancel ───────────────────────────────────────────────
+router.post('/:id/cancel', async (req, res) => {
+    if (!req.user) return res.status(401).json({ error: 'Sign in to cancel orders' });
+    try {
+        const { rows } = await pool.query(
+            `UPDATE orders SET status = 'cancelled', updated_at = NOW()
+             WHERE id = $1 AND user_id = $2 AND status IN ('pending', 'paid', 'processing')
+             RETURNING id, status`,
+            [req.params.id, req.user.id]
+        );
+        if (!rows.length) {
+            return res.status(400).json({ error: 'Order cannot be cancelled. It may have already shipped or been cancelled.' });
+        }
+        res.json({ message: 'Order successfully cancelled', order: rows[0] });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to cancel order' });
+    }
+});
+
 module.exports = router;
