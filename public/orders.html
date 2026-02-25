@@ -5,6 +5,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
     <title>My Orders – AEON Jewellery</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap"
+        rel="stylesheet" />
     <link rel="stylesheet" href="/css/styles.css" />
     <style>
         *,
@@ -168,12 +172,55 @@
             margin: 16px 0 10px;
         }
 
-        .loading {
-            text-align: center;
-            padding: 60px;
-            color: var(--text-muted);
-            letter-spacing: 2px;
-            font-size: 12px;
+        .status-delivered {
+            background: rgba(201, 169, 110, 0.12);
+            border: 1px solid rgba(201, 169, 110, 0.3);
+            color: var(--gold);
+        }
+
+        .status-shipped {
+            background: rgba(91, 192, 222, 0.12);
+            border: 1px solid rgba(91, 192, 222, 0.3);
+            color: #5bc0de;
+        }
+
+        .status-processing {
+            background: rgba(91, 192, 222, 0.08);
+            border: 1px solid rgba(91, 192, 222, 0.2);
+            color: #7dcfea;
+        }
+
+        .status-cancelled {
+            background: rgba(217, 83, 79, 0.12);
+            border: 1px solid rgba(217, 83, 79, 0.3);
+            color: #d9534f;
+        }
+
+        /* skeleton */
+        @keyframes skPulse {
+
+            0%,
+            100% {
+                opacity: 0.4
+            }
+
+            50% {
+                opacity: 0.9
+            }
+        }
+
+        .sk-card {
+            background: rgba(255, 255, 255, 0.025);
+            border: 1px solid rgba(201, 169, 110, 0.08);
+            border-radius: 16px;
+            padding: 22px;
+            margin-bottom: 18px;
+        }
+
+        .sk-line {
+            background: rgba(201, 169, 110, 0.08);
+            border-radius: 6px;
+            animation: skPulse 1.4s ease-in-out infinite;
         }
     </style>
 </head>
@@ -196,7 +243,24 @@
         <h1>My Orders</h1>
         <p class="page-sub">Your order history</p>
         <div id="orders-container">
-            <div class="loading">Loading orders…</div>
+            <!-- Skeleton loaders -->
+            <div class="sk-card">
+                <div class="sk-line" style="height:12px;width:30%;margin-bottom:10px;"></div>
+                <div style="display:flex;gap:8px;">
+                    <div class="sk-line" style="width:52px;height:52px;border-radius:8px;"></div>
+                    <div class="sk-line" style="width:52px;height:52px;border-radius:8px;"></div>
+                    <div class="sk-line" style="width:52px;height:52px;border-radius:8px;"></div>
+                </div>
+                <div class="sk-line" style="height:12px;width:20%;margin-top:14px;"></div>
+            </div>
+            <div class="sk-card">
+                <div class="sk-line" style="height:12px;width:25%;margin-bottom:10px;"></div>
+                <div style="display:flex;gap:8px;">
+                    <div class="sk-line" style="width:52px;height:52px;border-radius:8px;"></div>
+                    <div class="sk-line" style="width:52px;height:52px;border-radius:8px;"></div>
+                </div>
+                <div class="sk-line" style="height:12px;width:18%;margin-top:14px;"></div>
+            </div>
         </div>
     </div>
 
@@ -227,7 +291,11 @@
                 container.innerHTML = orders.map(order => {
                     const items = order.items || [];
                     const addr = order.address || {};
-                    const statusClass = { paid: 'status-paid', pending: 'status-pending', failed: 'status-failed' }[order.status] || 'status-pending';
+                    const statusClass = {
+                        paid: 'status-paid', pending: 'status-pending', failed: 'status-failed',
+                        delivered: 'status-delivered', shipped: 'status-shipped',
+                        processing: 'status-processing', cancelled: 'status-cancelled'
+                    }[order.status] || 'status-pending';
                     return `
           <div class="order-card">
             <div class="order-header">

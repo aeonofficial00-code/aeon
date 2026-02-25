@@ -127,6 +127,33 @@ app.get('/checkout', (req, res) => res.sendFile(path.join(__dirname, 'public', '
 app.get('/order-success', (req, res) => res.sendFile(path.join(__dirname, 'public', 'order-success.html')));
 app.get('/orders', (req, res) => res.sendFile(path.join(__dirname, 'public', 'orders.html')));
 
+// ── Sitemap.xml ───────────────────────────────────────────────────────────────
+app.get('/sitemap.xml', async (req, res) => {
+    const base = APP_URL;
+    try {
+        const [{ rows: products }, { rows: cats }] = await Promise.all([
+            pool.query(`SELECT id, updated_at FROM products ORDER BY updated_at DESC`),
+            pool.query(`SELECT name FROM categories`)
+        ]);
+        const today = new Date().toISOString().slice(0, 10);
+        const urls = [
+            `<url><loc>${base}/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>`,
+            ...cats.map(c => `<url><loc>${base}/category.html?c=${encodeURIComponent(c.name)}</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>`),
+            ...products.map(p => `<url><loc>${base}/product.html?id=${p.id}</loc><lastmod>${(p.updated_at || new Date()).toISOString().slice(0, 10)}</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>`)
+        ];
+        res.header('Content-Type', 'application/xml');
+        res.send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>`);
+    } catch (e) {
+        res.status(500).send('<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>');
+    }
+});
+
+// ── robots.txt ────────────────────────────────────────────────────────────────
+app.get('/robots.txt', (req, res) => {
+    res.type('text/plain');
+    res.send(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api\nSitemap: ${APP_URL}/sitemap.xml`);
+});
+
 // ── Catch-all (serve index.html or 404) ──────────────────────────────────────
 app.get('/{*splat}', (req, res) => {
     const file = path.join(__dirname, 'public', 'index.html');

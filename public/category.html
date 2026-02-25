@@ -5,8 +5,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Collection – AEON Jewellery</title>
-    <meta name="description"
+    <meta name="description" id="meta-desc"
         content="Browse AEON's curated jewellery collection. Gold-plated necklaces, bangles, earrings and more." />
+    <meta property="og:site_name" content="AEON Jewellery" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" id="og-title" content="AEON Jewellery Collections" />
+    <meta property="og:description" id="og-desc" content="Browse our curated gold-plated jewellery collection." />
+    <meta property="og:image" id="og-image" content="" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap"
+        rel="stylesheet" />
     <link rel="stylesheet" href="/css/styles.css" />
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
 </head>
@@ -190,6 +199,10 @@
             document.title = `${catName || 'Collection'} – AEON Jewellery`;
             document.getElementById('page-title').textContent = catName || 'All Collections';
             document.getElementById('breadcrumb-cat').textContent = catName || 'Collections';
+            // Dynamic meta + OG
+            document.getElementById('meta-desc')?.setAttribute('content', `Browse AEON's ${catName} collection. Premium 24K gold-plated jewellery.`);
+            document.getElementById('og-title')?.setAttribute('content', `${catName} – AEON Jewellery`);
+            document.getElementById('og-desc')?.setAttribute('content', `Shop our ${catName} collection. Handcrafted gold-plated pieces.`);
 
             const [products, allCats] = await Promise.all([
                 fetch(`/api/products?category=${encodeURIComponent(catName)}`).then(r => r.json()).catch(() => []),

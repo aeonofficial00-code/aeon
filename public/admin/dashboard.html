@@ -528,6 +528,89 @@
                 transform: translateY(0)
             }
         }
+
+        /* ── Mobile responsive sidebar ───────────────── */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                min-height: unset;
+                flex-direction: row;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+                position: sticky;
+                top: 0;
+                z-index: 50;
+                overflow-x: auto;
+            }
+
+            .sidebar-logo,
+            .sidebar-bottom {
+                display: none;
+            }
+
+            .sidebar-nav {
+                display: flex;
+                flex-direction: row;
+                padding: 0;
+                flex: 1;
+                overflow-x: auto;
+            }
+
+            .sidebar-link {
+                padding: 14px 18px;
+                white-space: nowrap;
+                font-size: 12px;
+                border-left: none !important;
+                border-bottom: 2px solid transparent;
+            }
+
+            .sidebar-link.active {
+                border-bottom: 2px solid var(--gold);
+                background: rgba(201, 169, 110, 0.06);
+            }
+
+            .content {
+                padding: 16px;
+            }
+
+            .topbar {
+                padding: 14px 16px;
+            }
+
+            .topbar-title {
+                font-size: 18px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .modal {
+                padding: 24px;
+                margin: 16px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .search-box input {
+                min-width: 140px;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th,
+            td {
+                padding: 8px 10px;
+            }
+        }
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
