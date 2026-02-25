@@ -113,25 +113,42 @@
         .form-group input,
         .form-group select {
             width: 100%;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(201, 169, 110, 0.15);
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(201, 169, 110, 0.3);
             border-radius: 10px;
-            padding: 12px 14px;
-            color: var(--text);
+            padding: 13px 16px;
+            color: #E8E0D0;
             font-size: 14px;
             font-family: var(--font-body);
             outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .form-group input::placeholder {
+            color: rgba(232, 224, 208, 0.38);
+        }
+
+        .form-group select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23C9A96E' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            background-size: 14px;
+            padding-right: 40px;
+            cursor: pointer;
         }
 
         .form-group input:focus,
         .form-group select:focus {
-            border-color: rgba(201, 169, 110, 0.5);
-            box-shadow: 0 0 0 3px rgba(201, 169, 110, 0.08);
+            border-color: rgba(201, 169, 110, 0.7);
+            box-shadow: 0 0 0 3px rgba(201, 169, 110, 0.1);
+            background: rgba(255, 255, 255, 0.11);
         }
 
         .form-group select option {
-            background: #111;
+            background: #1c1c1c;
+            color: #E8E0D0;
         }
 
         /* ─── Order Summary ─── */
