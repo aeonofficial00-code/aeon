@@ -73,15 +73,55 @@
                 </select>
             </div>
             <div class="products-grid" id="products-grid">
-                <!-- Skeletons -->
-                ${Array(6).fill('<div class="product-card">
+                <!-- Skeleton loading cards -->
+                <div class="product-card">
                     <div class="product-img-wrap skeleton" style="aspect-ratio:1;"></div>
                     <div class="product-info">
                         <div class="skeleton" style="height:12px;width:60%;margin-bottom:10px;"></div>
                         <div class="skeleton" style="height:20px;width:80%;margin-bottom:8px;"></div>
                         <div class="skeleton" style="height:18px;width:40%;"></div>
                     </div>
-                </div>').join('')}
+                </div>
+                <div class="product-card">
+                    <div class="product-img-wrap skeleton" style="aspect-ratio:1;"></div>
+                    <div class="product-info">
+                        <div class="skeleton" style="height:12px;width:60%;margin-bottom:10px;"></div>
+                        <div class="skeleton" style="height:20px;width:80%;margin-bottom:8px;"></div>
+                        <div class="skeleton" style="height:18px;width:40%;"></div>
+                    </div>
+                </div>
+                <div class="product-card">
+                    <div class="product-img-wrap skeleton" style="aspect-ratio:1;"></div>
+                    <div class="product-info">
+                        <div class="skeleton" style="height:12px;width:60%;margin-bottom:10px;"></div>
+                        <div class="skeleton" style="height:20px;width:80%;margin-bottom:8px;"></div>
+                        <div class="skeleton" style="height:18px;width:40%;"></div>
+                    </div>
+                </div>
+                <div class="product-card">
+                    <div class="product-img-wrap skeleton" style="aspect-ratio:1;"></div>
+                    <div class="product-info">
+                        <div class="skeleton" style="height:12px;width:60%;margin-bottom:10px;"></div>
+                        <div class="skeleton" style="height:20px;width:80%;margin-bottom:8px;"></div>
+                        <div class="skeleton" style="height:18px;width:40%;"></div>
+                    </div>
+                </div>
+                <div class="product-card">
+                    <div class="product-img-wrap skeleton" style="aspect-ratio:1;"></div>
+                    <div class="product-info">
+                        <div class="skeleton" style="height:12px;width:60%;margin-bottom:10px;"></div>
+                        <div class="skeleton" style="height:20px;width:80%;margin-bottom:8px;"></div>
+                        <div class="skeleton" style="height:18px;width:40%;"></div>
+                    </div>
+                </div>
+                <div class="product-card">
+                    <div class="product-img-wrap skeleton" style="aspect-ratio:1;"></div>
+                    <div class="product-info">
+                        <div class="skeleton" style="height:12px;width:60%;margin-bottom:10px;"></div>
+                        <div class="skeleton" style="height:20px;width:80%;margin-bottom:8px;"></div>
+                        <div class="skeleton" style="height:18px;width:40%;"></div>
+                    </div>
+                </div>
             </div>
             <div id="empty-state" class="empty-state" style="display:none;">
                 <h3>No Products Found</h3>
@@ -159,10 +199,11 @@
 
             allProducts = products;
 
-            // Set header bg
-            if (products.length && products[0].images[0]) {
+            // Set header bg using thumb URL (new API format)
+            const firstThumb = products.length ? (products[0].thumb || '') : '';
+            if (firstThumb) {
                 const bg = document.getElementById('header-bg-img');
-                bg.style.backgroundImage = `url('${products[0].images[0]}')`;
+                bg.style.backgroundImage = `url('${firstThumb}')`;
                 document.getElementById('page-subtitle').textContent = `${products.length} handpicked piece${products.length !== 1 ? 's' : ''} in this collection`;
             }
 
