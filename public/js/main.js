@@ -37,6 +37,13 @@ function updateCartUI() {
   renderCartItems();
 }
 
+function changeQty(id, delta) {
+  const item = cart.find(i => i.id === id);
+  if (!item) return;
+  item.qty = Math.max(1, (item.qty || 1) + delta);
+  saveCart();
+}
+
 function renderCartItems() {
   const list = document.getElementById('cart-items-list');
   const footer = document.getElementById('cart-footer');
@@ -45,36 +52,78 @@ function renderCartItems() {
   if (!cart.length) {
     list.innerHTML = `
       <div class="cart-empty">
-        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-          <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
-          <line x1="3" y1="6" x2="21" y2="6"/>
-          <path d="M16 10a4 4 0 01-8 0"/>
+        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="opacity:0.3;margin-bottom:14px;">
+          <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
         </svg>
-        <p>Your cart is empty</p>
-        <a href="#collections" class="btn btn-gold" style="width:auto;" onclick="closeCart()">Shop Now</a>
-      </div>
-    `;
+        <p style="margin-bottom:18px;color:var(--text-muted);font-size:14px;">Your cart is empty</p>
+        <a href="/#collections" class="btn btn-gold" style="font-size:11px;padding:10px 22px;" onclick="closeCart()">Shop Collections</a>
+      </div>`;
     if (footer) footer.style.display = 'none';
     return;
   }
 
-  list.innerHTML = cart.map(item => `
-    <div class="cart-item">
-      <img class="cart-item-img" src="${item.images && item.images[0] ? item.images[0] : ''}" alt="${item.name}" />
-      <div class="cart-item-info">
-        <p class="cart-item-name">${item.name}</p>
-        <p class="cart-item-cat">${item.category}</p>
-        <p class="cart-item-price">₹${(item.price * (item.qty || 1)).toLocaleString('en-IN')} ${item.qty > 1 ? `<small style="color:var(--text-muted);">×${item.qty}</small>` : ''}</p>
+  list.innerHTML = cart.map(item => {
+    const imgSrc = item.thumb || (item.images && item.images[0]) || '';
+    const linePrice = parseFloat(item.price) * (item.qty || 1);
+    return `
+    <div class="cart-item" style="border-bottom:1px solid rgba(201,169,110,0.07);padding:14px 0;display:flex;gap:12px;align-items:center;">
+      <img src="${imgSrc}" alt="${item.name}" style="width:60px;height:60px;border-radius:10px;object-fit:cover;border:1px solid rgba(201,169,110,0.1);background:#1a1a1a;flex-shrink:0;" onerror="this.style.display='none'"/>
+      <div style="flex:1;min-width:0;">
+        <p style="font-size:13px;color:var(--text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name}</p>
+        <p style="font-size:11px;color:var(--text-muted);margin:2px 0 8px;letter-spacing:0.5px;">${item.category}</p>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <div style="display:flex;align-items:center;gap:0;border:1px solid rgba(201,169,110,0.2);border-radius:20px;overflow:hidden;">
+            <button onclick="changeQty('${item.id}',-1)" style="background:none;border:none;color:var(--gold);width:28px;height:26px;cursor:pointer;font-size:14px;transition:background 0.2s;" onmouseover="this.style.background='rgba(201,169,110,0.1)'" onmouseout="this.style.background='none'">−</button>
+            <span style="font-size:12px;color:var(--text);min-width:20px;text-align:center;">${item.qty || 1}</span>
+            <button onclick="changeQty('${item.id}',1)" style="background:none;border:none;color:var(--gold);width:28px;height:26px;cursor:pointer;font-size:14px;transition:background 0.2s;" onmouseover="this.style.background='rgba(201,169,110,0.1)'" onmouseout="this.style.background='none'">+</button>
+          </div>
+          <span style="font-size:13px;color:var(--gold);font-weight:600;">₹${linePrice.toLocaleString('en-IN')}</span>
+        </div>
       </div>
-      <button class="cart-item-remove" onclick="removeFromCart('${item.id}')">✕</button>
-    </div>
-  `).join('');
+      <button onclick="removeFromCart('${item.id}')" style="background:none;border:none;color:rgba(255,255,255,0.2);font-size:16px;cursor:pointer;flex-shrink:0;padding:4px;transition:color 0.2s;" onmouseover="this.style.color='rgba(255,100,100,0.7)'" onmouseout="this.style.color='rgba(255,255,255,0.2)'">✕</button>
+    </div>`;
+  }).join('');
 
-  const total = cart.reduce((s, i) => s + i.price * (i.qty || 1), 0);
+  const subtotal = cart.reduce((s, i) => s + parseFloat(i.price) * (i.qty || 1), 0);
+  const deliveryFree = subtotal >= 999;
+  const delivery = deliveryFree ? 0 : 99;
+  const total = subtotal + delivery;
+
   const totalEl = document.getElementById('cart-total');
   if (totalEl) totalEl.textContent = `₹${total.toLocaleString('en-IN')}`;
-  if (footer) footer.style.display = 'block';
+
+  // Inject breakdown + checkout button into footer
+  if (footer) {
+    footer.style.display = 'block';
+    footer.innerHTML = `
+      <div style="border-top:1px solid rgba(201,169,110,0.08);padding-top:14px;margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:6px;">
+          <span>Subtotal</span><span>₹${subtotal.toLocaleString('en-IN')}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:4px;">
+          <span>Delivery</span><span style="color:${deliveryFree ? '#5cb85c' : 'inherit'}">${deliveryFree ? 'FREE' : '₹99'}</span>
+        </div>
+        ${deliveryFree ? '' : '<p style="font-size:10px;color:var(--text-muted);margin-bottom:4px;">Add ₹' + (999 - Math.round(subtotal)) + ' more for free delivery</p>'}
+        <div style="display:flex;justify-content:space-between;font-size:15px;color:var(--gold);font-weight:600;margin-top:10px;padding-top:10px;border-top:1px solid rgba(201,169,110,0.08);">
+          <span>Total</span><span>₹${total.toLocaleString('en-IN')}</span>
+        </div>
+      </div>
+      <a href="/checkout" onclick="closeCart()" style="
+        display:flex;align-items:center;justify-content:center;gap:8px;
+        background:linear-gradient(135deg,#9E7A40,var(--gold),#E8C98A);
+        color:#0a0a0a;text-decoration:none;border-radius:12px;
+        padding:14px;font-size:12px;font-weight:700;letter-spacing:2px;
+        text-transform:uppercase;transition:all 0.25s;
+        box-shadow:0 4px 20px rgba(201,169,110,0.2);"
+        onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 30px rgba(201,169,110,0.35)'"
+        onmouseout="this.style.transform='none';this.style.boxShadow='0 4px 20px rgba(201,169,110,0.2)'">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        Proceed to Checkout
+      </a>
+      <p style="text-align:center;font-size:10px;color:rgba(255,255,255,0.2);margin-top:8px;letter-spacing:1px;">🔒 Secured by Razorpay</p>`;
+  }
 }
+
 
 // ── CART DRAWER ───────────────────────────────────
 function openCart() {

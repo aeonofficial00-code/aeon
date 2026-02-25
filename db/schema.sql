@@ -42,3 +42,24 @@ CREATE INDEX IF NOT EXISTS IDX_session_expire ON session (expire);
 CREATE INDEX IF NOT EXISTS idx_products_category ON products (category);
 CREATE INDEX IF NOT EXISTS idx_products_featured  ON products (featured);
 CREATE INDEX IF NOT EXISTS idx_users_google_id    ON users (google_id);
+
+CREATE TABLE IF NOT EXISTS orders (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id             INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  guest_email         VARCHAR(255),
+  items               JSONB NOT NULL DEFAULT '[]',
+  address             JSONB NOT NULL DEFAULT '{}',
+  subtotal            DECIMAL(10,2) NOT NULL DEFAULT 0,
+  delivery_charge     DECIMAL(10,2) NOT NULL DEFAULT 0,
+  total               DECIMAL(10,2) NOT NULL DEFAULT 0,
+  status              VARCHAR(50) NOT NULL DEFAULT 'pending',
+  razorpay_order_id   VARCHAR(255),
+  razorpay_payment_id VARCHAR(255),
+  razorpay_signature  VARCHAR(500),
+  created_at          TIMESTAMPTZ DEFAULT NOW(),
+  updated_at          TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders (user_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status  ON orders (status);
+CREATE INDEX IF NOT EXISTS idx_orders_razorpay ON orders (razorpay_order_id);
+

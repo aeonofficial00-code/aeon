@@ -113,10 +113,17 @@ if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 const apiRouter = require('./routes/api');
 const adminRouter = require('./routes/admin');
 const authRouter = require('./routes/auth');
+const ordersRouter = require('./routes/orders');
 
 app.use('/api', apiRouter);
 app.use('/api/admin', adminRouter);
 app.use('/auth', authRouter);
+app.use('/api/orders', ordersRouter);
+
+// ── Page routes ───────────────────────────────────────────────────────────────
+app.get('/checkout', (req, res) => res.sendFile(path.join(__dirname, 'public', 'checkout.html')));
+app.get('/order-success', (req, res) => res.sendFile(path.join(__dirname, 'public', 'order-success.html')));
+app.get('/orders', (req, res) => res.sendFile(path.join(__dirname, 'public', 'orders.html')));
 
 // ── Catch-all (serve index.html) ─────────────────────────────────────────────
 app.get('/{*splat}', (req, res) => {
