@@ -154,10 +154,11 @@ function loadUserState() {
     currentUser = user;
     if (user) {
       const firstName = user.name ? user.name.split(' ')[0] : 'Account';
+      userSlot.style.gap = '12px';
       userSlot.innerHTML = `
-              ${user.isAdmin ? `<a href="/admin" class="nav-icon-btn" title="Admin Dashboard" style="font-size:11px;letter-spacing:1.5px;color:var(--gold);padding:0 8px;text-transform:uppercase;text-decoration:none;font-weight:600;">Admin</a>` : ''}
-              <span style="font-size:12px;letter-spacing:0.5px;color:var(--text-muted);padding:0 6px;">${firstName}</span>
-              <a href="/auth/logout" class="nav-icon-btn" title="Sign out" style="font-size:11px;letter-spacing:1px;color:rgba(255,255,255,0.35);padding:0 6px;text-decoration:none;" onmouseover="this.style.color='#ff8080'" onmouseout="this.style.color='rgba(255,255,255,0.35)'">Sign out</a>
+              ${user.isAdmin ? `<a href="/admin" class="nav-icon-btn" title="Admin Dashboard" style="font-size:11px;letter-spacing:1.5px;color:var(--gold);padding:0 8px;text-transform:uppercase;text-decoration:none;font-weight:600;border:1px solid rgba(201,169,110,0.3);border-radius:6px;">Admin</a>` : ''}
+              <span style="font-size:12px;letter-spacing:0.5px;color:var(--text-muted);">${firstName}</span>
+              <a href="/auth/logout" class="nav-icon-btn" title="Sign out" style="font-size:11px;letter-spacing:1px;color:rgba(255,255,255,0.35);text-decoration:none;" onmouseover="this.style.color='#ff8080'" onmouseout="this.style.color='rgba(255,255,255,0.35)'">Sign out</a>
             `;
     } else {
       userSlot.innerHTML = `

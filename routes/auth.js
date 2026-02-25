@@ -21,19 +21,23 @@ router.get('/google/callback',
     async (req, res) => {
         const redirect = req.query.state || 'home';
         const email = req.user?.email?.toLowerCase() || '';
+        const isAdmin = ADMIN_EMAILS.includes(email);
+
+        // Always issue an admin session token for admin users (regardless of redirect)
+        if (isAdmin) {
+            req.session.adminToken = require('crypto').randomBytes(32).toString('hex');
+            req.session.isAdmin = true;
+        }
 
         if (redirect === 'admin') {
-            if (ADMIN_EMAILS.includes(email)) {
-                // Issue an admin session token stored in the session
-                req.session.adminToken = require('crypto').randomBytes(32).toString('hex');
-                req.session.isAdmin = true;
+            if (isAdmin) {
                 return res.redirect('/admin/?auth=google');
             } else {
                 return res.redirect('/admin/?error=not_admin');
             }
         }
 
-        // Regular user – go to home
+        // Regular user or admin from homepage – go to home
         res.redirect('/');
     }
 );

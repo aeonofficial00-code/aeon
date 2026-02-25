@@ -332,14 +332,15 @@
       const footerCats = document.getElementById('footer-cats');
       try {
         const cats = await fetch('/api/categories').then(r => r.json());
-        // Load hero image from first category
+        // Hero image: use static homepage.png (AEON product photo)
+        document.getElementById('hero-side-img').src = '/images/homepage.png';
+        // About section image: use first category cover if available
         if (cats.length > 0 && cats[0].cover) {
-          document.getElementById('hero-side-img').src = cats[0].cover;
           document.getElementById('about-img').src = cats[0].cover;
         }
         // Load insta grid from all categories
         const allProds = await fetch('/api/products').then(r => r.json());
-        const instaImgs = allProds.flatMap(p => p.images).slice(0, 8);
+        const instaImgs = allProds.flatMap(p => p.thumb ? [p.thumb] : []).slice(0, 8);
         const instaGrid = document.getElementById('insta-grid');
         instaGrid.innerHTML = instaImgs.map(img => `
         <a class="insta-item" href="https://www.instagram.com/aeon_.official" target="_blank">

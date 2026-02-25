@@ -285,10 +285,22 @@
             }).catch(() => { });
         }
 
-        // Redirect if already authenticated
+        // Redirect if already authenticated via sessionStorage
         if (sessionStorage.getItem('aeon_admin_token')) {
             window.location.href = '/admin/dashboard.html';
         }
+
+        // Also check if user is already logged in as admin via Google session
+        // (e.g. they signed in from the homepage and clicked Admin in the nav)
+        fetch('/auth/admin-token').then(r => {
+            if (r.ok) return r.json();
+            return null;
+        }).then(data => {
+            if (data && data.token) {
+                sessionStorage.setItem('aeon_admin_token', data.token);
+                window.location.replace('/admin/dashboard.html');
+            }
+        }).catch(() => { });
 
         // Password login form
         document.getElementById('login-form').addEventListener('submit', async (e) => {
