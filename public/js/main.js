@@ -153,17 +153,16 @@ function loadUserState() {
   fetch('/auth/me').then(r => r.json()).then(({ user }) => {
     currentUser = user;
     if (user) {
+      const firstName = user.name ? user.name.split(' ')[0] : 'Account';
       userSlot.innerHTML = `
-              <a href="/auth/logout" class="nav-icon-btn" title="Sign out ${user.name}" style="gap:0;">
-                ${user.avatar
-          ? `<img src="${user.avatar}" alt="${user.name}" style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--gold);object-fit:cover;">`
-          : `<span style="font-size:11px;letter-spacing:1px;color:var(--gold);">${user.name.split(' ')[0]}</span>`}
-              </a>
+              ${user.isAdmin ? `<a href="/admin" class="nav-icon-btn" title="Admin Dashboard" style="font-size:11px;letter-spacing:1.5px;color:var(--gold);padding:0 8px;text-transform:uppercase;text-decoration:none;font-weight:600;">Admin</a>` : ''}
+              <span style="font-size:12px;letter-spacing:0.5px;color:var(--text-muted);padding:0 6px;">${firstName}</span>
+              <a href="/auth/logout" class="nav-icon-btn" title="Sign out" style="font-size:11px;letter-spacing:1px;color:rgba(255,255,255,0.35);padding:0 6px;text-decoration:none;" onmouseover="this.style.color='#ff8080'" onmouseout="this.style.color='rgba(255,255,255,0.35)'">Sign out</a>
             `;
     } else {
       userSlot.innerHTML = `
-              <a href="/login" class="nav-icon-btn" title="Sign in" style="font-size:11px;letter-spacing:1px;color:var(--text-muted);padding:0 4px;">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <a href="/login" class="nav-icon-btn" title="Sign in" style="font-size:11px;letter-spacing:1px;color:var(--text-muted);padding:0 6px;text-decoration:none;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-right:4px;vertical-align:middle;"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Sign in
               </a>
             `;
     }
