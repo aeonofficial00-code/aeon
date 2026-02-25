@@ -152,8 +152,19 @@ function showToast(message, duration = 3000) {
 function renderProductCard(p) {
   // Use URL endpoint (thumb) preferring over raw images array
   const img = p.thumb || (p.images && p.images[0]) || '';
+  const priceHtml = p.is_on_sale && p.sale_price
+    ? `<div class="product-price" style="display:flex;align-items:center;gap:8px;">
+        <span style="color:#e07070;font-weight:700;">&#8377;${parseFloat(p.sale_price).toLocaleString('en-IN')}</span>
+        <span style="text-decoration:line-through;color:var(--text-muted);font-size:13px;">&#8377;${parseFloat(p.price).toLocaleString('en-IN')}</span>
+        <span style="font-size:10px;font-weight:normal;color:var(--text-muted);margin-left:auto;">incl. taxes</span>
+       </div>`
+    : `<p class="product-price">₹${parseFloat(p.price).toLocaleString('en-IN')} <span>incl. taxes</span></p>`;
+
+  const discount = p.is_on_sale && p.sale_price ? Math.round((1 - p.sale_price / p.price) * 100) : 0;
+
   return `
-    <div class="product-card reveal" onclick="location.href='product.html?id=${p.id}'">
+    <div class="product-card reveal" onclick="location.href='product.html?id=${p.id}'" style="position:relative;">
+      ${discount > 0 ? `<div style="position:absolute;top:10px;left:10px;z-index:3;background:#e05555;color:#fff;font-size:10px;font-weight:700;letter-spacing:1.5px;padding:4px 10px;border-radius:20px;text-transform:uppercase;">${discount}% OFF</div>` : ''}
       <div class="product-img-wrap">
         <img class="product-img" src="${img}" alt="${p.name}" loading="lazy" />
         ${p.stock_status === 'out_of_stock' ? '<span class="product-badge" style="background:#d9534f;color:#fff;">Sold Out</span>' : (p.featured ? '<span class="product-badge">Featured</span>' : '')}
@@ -163,7 +174,7 @@ function renderProductCard(p) {
             Sold Out
           </button>
           ` : `
-          <button class="btn-cart" onclick="event.stopPropagation(); addToCart(${JSON.stringify({ id: p.id, name: p.name, category: p.category, price: p.price, thumb: img }).replace(/"/g, '&quot;')})">
+          <button class="btn-cart" onclick="event.stopPropagation(); addToCart(${JSON.stringify({ id: p.id, name: p.name, category: p.category, price: p.is_on_sale && p.sale_price ? p.sale_price : p.price, thumb: img }).replace(/"/g, '&quot;')})">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
             Add to Cart
           </button>
@@ -174,7 +185,7 @@ function renderProductCard(p) {
       <div class="product-info">
         <p class="product-category">${p.category}</p>
         <h3 class="product-name">${p.name}</h3>
-        <p class="product-price">₹${parseFloat(p.price).toLocaleString('en-IN')} <span>incl. taxes</span></p>
+        ${priceHtml}
       </div>
     </div>
   `;

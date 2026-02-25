@@ -139,7 +139,7 @@ router.delete('/categories/:id', auth, async (req, res) => {
 // ── GET /api/admin/products ───────────────────────────────────────────────────
 router.get('/products', auth, async (req, res) => {
     try {
-        const { rows } = await pool.query(`SELECT id, name, category, price, description, featured, stock, stock_status, created_at FROM products ORDER BY created_at DESC`);
+        const { rows } = await pool.query(`SELECT id, name, category, price, description, featured, stock, stock_status, is_on_sale, sale_price, created_at FROM products ORDER BY created_at DESC`);
         res.json(rows);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
