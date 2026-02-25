@@ -134,7 +134,7 @@ router.get('/products/:id/image/:idx', async (req, res) => {
 router.get('/featured', async (req, res) => {
     try {
         const { rows } = await pool.query(
-            `SELECT id, name, category, price, description, featured, created_at,
+            `SELECT id, name, category, price, description, featured, stock_status, created_at,
               '/api/products/' || id || '/thumb' AS thumb
        FROM products WHERE featured=true ORDER BY created_at DESC`
         );
@@ -146,7 +146,7 @@ router.get('/featured', async (req, res) => {
 router.get('/sale', async (req, res) => {
     try {
         const { rows } = await pool.query(
-            `SELECT id, name, category, price, sale_price, is_on_sale, description, created_at,
+            `SELECT id, name, category, price, sale_price, is_on_sale, description, stock_status, created_at,
               '/api/products/' || id || '/thumb' AS thumb
        FROM products WHERE is_on_sale=true ORDER BY created_at DESC`
         );
