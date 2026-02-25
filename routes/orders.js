@@ -100,11 +100,18 @@ router.post('/verify', express.json(), async (req, res) => {
         }
 
         // Mark order as paid
-        await pool.query(
+        const { rows } = await pool.query(
             `UPDATE orders SET status='paid', razorpay_payment_id=$1, razorpay_signature=$2, updated_at=NOW()
-       WHERE id=$3`,
+       WHERE id=$3 RETURNING *`,
             [razorpayPaymentId, razorpaySignature, orderId]
         );
+
+        // Send confirmation emails (non-blocking)
+        if (rows[0]) {
+            const { sendOrderConfirmation, sendAdminOrderAlert } = require('../utils/mailer');
+            sendOrderConfirmation(rows[0]).catch(e => console.warn('Email error:', e.message));
+            sendAdminOrderAlert(rows[0]).catch(e => console.warn('Admin email error:', e.message));
+        }
 
         res.json({ success: true, orderId });
     } catch (err) {
@@ -112,6 +119,7 @@ router.post('/verify', express.json(), async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
 
 // ── GET /api/orders/my ────────────────────────────────────────────────────────
 router.get('/my', async (req, res) => {

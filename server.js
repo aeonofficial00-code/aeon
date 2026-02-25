@@ -114,11 +114,13 @@ const apiRouter = require('./routes/api');
 const adminRouter = require('./routes/admin');
 const authRouter = require('./routes/auth');
 const ordersRouter = require('./routes/orders');
+const couponsRouter = require('./routes/coupons');
 
 app.use('/api', apiRouter);
 app.use('/api/admin', adminRouter);
 app.use('/auth', authRouter);
 app.use('/api/orders', ordersRouter);
+app.use('/api/coupons', couponsRouter);
 
 // ── Page routes ───────────────────────────────────────────────────────────────
 app.get('/checkout', (req, res) => res.sendFile(path.join(__dirname, 'public', 'checkout.html')));

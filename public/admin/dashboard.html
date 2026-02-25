@@ -670,8 +670,14 @@
                 <div class="table-wrap">
                     <div class="table-header">
                         <span style="font-size:14px;letter-spacing:1px;color:var(--gold);">All Orders</span>
-                        <div class="search-box"><input type="text" placeholder="Search by name, ID…"
-                                oninput="filterOrders(this.value)" /></div>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <div class="search-box"><input type="text" placeholder="Search by name, ID…"
+                                    oninput="filterOrders(this.value)" /></div>
+                            <button onclick="exportOrdersCSV()"
+                                style="padding:8px 16px;background:rgba(201,169,110,0.1);border:1px solid rgba(201,169,110,0.3);color:var(--gold);border-radius:8px;font-size:11px;font-weight:600;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all 0.2s;"
+                                onmouseover="this.style.background='rgba(201,169,110,0.2)'"
+                                onmouseout="this.style.background='rgba(201,169,110,0.1)'">⬇️ Export CSV</button>
+                        </div>
                     </div>
                     <table>
                         <thead>
@@ -861,6 +867,37 @@
                     (o.guest_email || '').toLowerCase().includes(q.toLowerCase());
             });
             renderOrdersTable(filtered);
+        }
+
+        function exportOrdersCSV() {
+            if (!allOrders.length) { alert('No orders to export.'); return; }
+            const esc = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+            const headers = ['Order ID', 'Date', 'Customer', 'Phone', 'Email', 'Items', 'Address', 'Subtotal', 'Delivery', 'Total', 'Status'];
+            const rows = allOrders.map(o => {
+                const addr = o.address || {};
+                const items = (o.items || []).map(i => `${i.name} x${i.qty || 1}`).join('; ');
+                const address = [addr.line1, addr.city, addr.state, addr.pincode].filter(Boolean).join(', ');
+                return [
+                    o.id.slice(0, 8).toUpperCase(),
+                    new Date(o.created_at).toLocaleDateString('en-IN'),
+                    addr.name || o.guest_email || 'Guest',
+                    addr.phone || '',
+                    o.guest_email || '',
+                    items,
+                    address,
+                    o.subtotal || 0,
+                    o.delivery_charge || 0,
+                    o.total || 0,
+                    o.status || ''
+                ].map(esc).join(',');
+            });
+            const csv = [headers.join(','), ...rows].join('\r\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `aeon_orders_${new Date().toISOString().slice(0, 10)}.csv`;
+            a.click();
+            URL.revokeObjectURL(a.href);
         }
 
         async function updateOrderStatus(orderId) {

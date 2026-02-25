@@ -378,6 +378,22 @@
                     <div class="price-row"><span>Delivery</span><span id="sum-delivery">₹99</span></div>
                     <div id="free-delivery-note" class="free-delivery" style="margin-bottom:8px;display:none;">🎉 Free
                         delivery on this order!</div>
+                    <!-- Coupon input -->
+                    <div style="display:flex;gap:8px;margin:14px 0 8px;">
+                        <input id="coupon-input" type="text" placeholder="Coupon code" autocomplete="off"
+                            style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(201,169,110,0.2);border-radius:8px;padding:10px 12px;color:#fff;font-size:12px;font-family:var(--font-body);outline:none;letter-spacing:1px;text-transform:uppercase;transition:border-color 0.2s;"
+                            onfocus="this.style.borderColor='var(--gold)'"
+                            onblur="this.style.borderColor='rgba(201,169,110,0.2)'" />
+                        <button onclick="applyCoupon()" id="coupon-btn"
+                            style="padding:10px 16px;background:rgba(201,169,110,0.1);border:1px solid rgba(201,169,110,0.25);color:var(--gold);border-radius:8px;font-size:11px;font-weight:600;letter-spacing:1px;cursor:pointer;transition:all 0.2s;white-space:nowrap;"
+                            onmouseover="this.style.background='rgba(201,169,110,0.18)'"
+                            onmouseout="this.style.background='rgba(201,169,110,0.1)'">Apply</button>
+                    </div>
+                    <div id="coupon-msg" style="font-size:11px;min-height:16px;margin-bottom:6px;"></div>
+                    <div class="price-row" id="discount-row" style="display:none;">
+                        <span style="color:#5cb85c;">Discount</span>
+                        <span id="sum-discount" style="color:#5cb85c;">-₹0</span>
+                    </div>
                     <div class="divider"></div>
                     <div class="price-row total"><span>Total</span><span id="sum-total">₹0</span></div>
 
@@ -405,6 +421,7 @@
     <script>
         const DELIVERY_THRESHOLD = 999, DELIVERY_CHARGE = 99;
         let cartItems = [];
+        let _appliedCoupon = null;
 
         document.addEventListener('DOMContentLoaded', () => {
             cartItems = loadCart();
@@ -435,15 +452,51 @@
           <div class="order-item-price">₹${(parseFloat(item.price) * (item.qty || 1)).toLocaleString('en-IN')}</div>
         </div>
       `).join('');
+            recalcSummary();
+        }
 
+        function recalcSummary() {
             const subtotal = cartItems.reduce((s, i) => s + parseFloat(i.price) * (i.qty || 1), 0);
             const delivery = subtotal >= DELIVERY_THRESHOLD ? 0 : DELIVERY_CHARGE;
-            const total = subtotal + delivery;
+            const discount = _appliedCoupon ? _appliedCoupon.discount : 0;
+            const total = Math.max(0, subtotal + delivery - discount);
 
             document.getElementById('sum-subtotal').textContent = '₹' + subtotal.toLocaleString('en-IN');
             document.getElementById('sum-delivery').textContent = delivery === 0 ? 'FREE' : '₹' + delivery;
             document.getElementById('sum-total').textContent = '₹' + total.toLocaleString('en-IN');
             document.getElementById('free-delivery-note').style.display = delivery === 0 ? 'block' : 'none';
+            if (_appliedCoupon) {
+                document.getElementById('discount-row').style.display = 'flex';
+                document.getElementById('sum-discount').textContent = '-₹' + discount.toLocaleString('en-IN');
+            } else {
+                document.getElementById('discount-row').style.display = 'none';
+            }
+        }
+
+        async function applyCoupon() {
+            const code = document.getElementById('coupon-input').value.trim();
+            const msgEl = document.getElementById('coupon-msg');
+            if (!code) { msgEl.textContent = ''; return; }
+            const subtotal = cartItems.reduce((s, i) => s + parseFloat(i.price) * (i.qty || 1), 0);
+            document.getElementById('coupon-btn').textContent = '…';
+            try {
+                const res = await fetch('/api/coupons/apply', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code, subtotal })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    _appliedCoupon = data;
+                    msgEl.style.color = '#5cb85c';
+                    msgEl.textContent = `✅ "${data.code}" applied — ${data.description}`;
+                } else {
+                    _appliedCoupon = null;
+                    msgEl.style.color = '#e57373';
+                    msgEl.textContent = '❌ ' + (data.error || 'Invalid coupon');
+                }
+            } catch { msgEl.style.color = '#e57373'; msgEl.textContent = '❌ Network error'; }
+            document.getElementById('coupon-btn').textContent = 'Apply';
+            recalcSummary();
         }
 
         async function prefillUser() {
@@ -472,14 +525,19 @@
 
             const btn = document.getElementById('pay-btn');
             btn.disabled = true; btn.textContent = 'Creating order…';
+            const subtotal = cartItems.reduce((s, i) => s + parseFloat(i.price) * (i.qty || 1), 0);
+            const delivery = subtotal >= DELIVERY_THRESHOLD ? 0 : DELIVERY_CHARGE;
+            const discount = _appliedCoupon ? _appliedCoupon.discount : 0;
 
             try {
                 const res = await fetch('/api/orders/create', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         items: cartItems.map(i => ({ id: i.id, name: i.name, price: i.price, qty: i.qty || 1, thumb: i.thumb, category: i.category })),
-                        address: { name, phone, line1, line2, city, state, pincode, country: 'India' },
-                        email
+                        address: { name, phone, line1, line2, city, state, pincode, country: 'India', email },
+                        email,
+                        couponId: _appliedCoupon?.couponId || null,
+                        discount
                     })
                 });
                 const data = await res.json();

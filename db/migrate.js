@@ -42,6 +42,18 @@ async function migrate() {
               created_at TIMESTAMPTZ DEFAULT NOW()
             )`,
             `CREATE INDEX IF NOT EXISTS idx_reviews_product ON reviews (product_id)`,
+            `CREATE TABLE IF NOT EXISTS coupons (
+              id SERIAL PRIMARY KEY,
+              code VARCHAR(30) NOT NULL UNIQUE,
+              discount_type VARCHAR(10) NOT NULL DEFAULT 'percent' CHECK (discount_type IN ('percent','fixed')),
+              discount_value NUMERIC(10,2) NOT NULL,
+              min_order NUMERIC(10,2) DEFAULT 0,
+              max_uses INTEGER DEFAULT NULL,
+              uses_count INTEGER DEFAULT 0,
+              active BOOLEAN DEFAULT true,
+              expires_at TIMESTAMPTZ DEFAULT NULL,
+              created_at TIMESTAMPTZ DEFAULT NOW()
+            )`,
         ];
         for (const sql of alterations) {
             await client.query(sql);
