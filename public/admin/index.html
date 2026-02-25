@@ -116,24 +116,6 @@
             flex-shrink: 0;
         }
 
-        .divider-text {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            color: rgba(255, 255, 255, 0.2);
-            font-size: 11px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            margin: 24px 0;
-        }
-
-        .divider-text::before,
-        .divider-text::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: rgba(201, 169, 110, 0.1);
-        }
 
         .form-group {
             margin-bottom: 20px;
@@ -250,19 +232,6 @@
             Sign in with Google
         </a>
 
-        <div class="divider-text">or use password</div>
-
-        <!-- Password fallback -->
-        <form id="login-form">
-            <div class="form-group">
-                <label for="password">Admin Password</label>
-                <input type="password" id="password" placeholder="Enter admin password" autocomplete="current-password"
-                    required />
-            </div>
-            <button type="submit" class="login-btn" id="login-btn">Enter Dashboard</button>
-            <p class="error-msg" id="error-msg">Incorrect password. Try again.</p>
-        </form>
-
         <p class="back-link">← <a href="/">Back to Store</a></p>
     </div>
 
@@ -289,26 +258,6 @@
         if (sessionStorage.getItem('aeon_admin_token')) {
             window.location.href = '/admin/dashboard.html';
         }
-
-        // Password login form
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('login-btn');
-            const err = document.getElementById('error-msg');
-            btn.textContent = 'Entering…'; btn.disabled = true; err.style.display = 'none';
-            try {
-                const res = await fetch('/api/admin/login', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ password: document.getElementById('password').value })
-                });
-                if (res.ok) {
-                    const { token } = await res.json();
-                    sessionStorage.setItem('aeon_admin_token', token);
-                    window.location.href = '/admin/dashboard.html';
-                } else { err.style.display = 'block'; }
-            } catch { err.textContent = 'Connection error.'; err.style.display = 'block'; }
-            finally { btn.textContent = 'Enter Dashboard'; btn.disabled = false; }
-        });
     </script>
 </body>
 

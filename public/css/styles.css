@@ -582,6 +582,7 @@ button {
   line-height: 1.8;
   margin-bottom: 48px;
   animation: fadeUp 1s ease 0.7s both;
+  text-align: center;
 }
 
 .hero-cta {
