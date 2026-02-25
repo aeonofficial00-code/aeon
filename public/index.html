@@ -162,6 +162,25 @@
     </div>
   </section>
 
+  <!-- OFFERS / ON SALE SECTION -->
+  <section class="products-section" id="offers-section"
+    style="display:none; background: linear-gradient(180deg, transparent, rgba(201,169,110,0.04), transparent); border-top: 1px solid rgba(201,169,110,0.1); border-bottom: 1px solid rgba(201,169,110,0.1);">
+    <div class="container">
+      <div class="products-header reveal">
+        <div>
+          <p class="section-label" style="color:#e05555;">🔥 Limited Time</p>
+          <h2 class="section-title">On <span class="gold-text">Sale</span></h2>
+        </div>
+        <a href="#collections" class="btn"
+          style="background:rgba(224,85,85,0.12);border:1px solid rgba(224,85,85,0.35);color:#e07070;letter-spacing:2px;font-size:11px;padding:10px 22px;border-radius:8px;">View
+          All</a>
+      </div>
+      <div class="products-grid" id="sale-grid">
+        <!-- Injected by JS -->
+      </div>
+    </div>
+  </section>
+
   <!-- ABOUT SECTION -->
   <section class="about-section" id="about">
     <div class="container">
@@ -333,7 +352,7 @@
     });
 
     async function initHomepage() {
-      await Promise.all([loadCategories(), loadFeatured()]);
+      await Promise.all([loadCategories(), loadFeatured(), loadSale()]);
       setupReveal();
       setupParticles();
       setupCounter();
@@ -358,8 +377,9 @@
         </a>
       `).join('');
 
-        // Render category cards
-        grid.innerHTML = cats.map(cat => `
+        // Render category cards — top-level only on homepage
+        const topLevelCats = cats.filter(c => !c.parent_id);
+        grid.innerHTML = topLevelCats.map(cat => `
         <div class="category-card reveal" onclick="location.href='category.html?c=${encodeURIComponent(cat.name)}'">
           <img class="card-img" src="${cat.cover || ''}" alt="${cat.name}" loading="lazy" />
           <div class="card-overlay"></div>
@@ -391,6 +411,37 @@
         grid.innerHTML = featured.slice(0, 8).map(p => renderProductCard(p)).join('');
         if (window.lucide) lucide.createIcons();
       } catch (e) { console.error(e); }
+    }
+
+    async function loadSale() {
+      const section = document.getElementById('offers-section');
+      const grid = document.getElementById('sale-grid');
+      try {
+        const sale = await fetch('/api/sale').then(r => r.json());
+        if (!sale || !sale.length) { section.style.display = 'none'; return; }
+        section.style.display = '';
+        grid.innerHTML = sale.slice(0, 8).map(p => {
+          const priceHtml = p.is_on_sale && p.sale_price
+            ? `<div style="display:flex;align-items:center;gap:8px;">
+                <span style="color:#e07070;font-weight:700;font-size:16px;">&#8377;${parseFloat(p.sale_price).toLocaleString('en-IN')}</span>
+                <span style="text-decoration:line-through;color:var(--text-muted);font-size:13px;">&#8377;${parseFloat(p.price).toLocaleString('en-IN')}</span>
+               </div>`
+            : `<div style="color:var(--gold);font-weight:600;">&#8377;${parseFloat(p.price).toLocaleString('en-IN')}</div>`;
+          const discount = p.is_on_sale && p.sale_price ? Math.round((1 - p.sale_price / p.price) * 100) : 0;
+          return `<div class="product-card reveal" onclick="location.href='product.html?id=${p.id}'" style="cursor:pointer;position:relative;">
+              ${discount > 0 ? `<div style="position:absolute;top:10px;left:10px;z-index:3;background:#e05555;color:#fff;font-size:10px;font-weight:700;letter-spacing:1.5px;padding:4px 10px;border-radius:20px;text-transform:uppercase;">${discount}% OFF</div>` : ''}
+              <div class="product-img-wrap">
+                <img src="${p.thumb}" alt="${p.name}" loading="lazy" style="width:100%;height:100%;object-fit:cover;" onerror="this.src='/images/placeholder.png'" />
+              </div>
+              <div class="product-info">
+                <p class="product-category">${p.category}</p>
+                <h3 class="product-name">${p.name}</h3>
+                ${priceHtml}
+              </div>
+            </div>`;
+        }).join('');
+        if (window.lucide) lucide.createIcons();
+      } catch (e) { section.style.display = 'none'; }
     }
 
     function setupReveal() {

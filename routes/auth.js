@@ -65,10 +65,19 @@ router.get('/me', (req, res) => {
 
 // GET /auth/admin-token – returns admin token for API calls (after Google login)
 router.get('/admin-token', (req, res) => {
-    if (!req.session.isAdmin || !req.session.adminToken) {
-        return res.status(401).json({ error: 'Not an admin' });
+    // Case 1: token already issued in this session (via ?redirect=admin flow)
+    if (req.session?.isAdmin && req.session?.adminToken) {
+        return res.json({ token: req.session.adminToken });
     }
-    res.json({ token: req.session.adminToken });
+    // Case 2: user is authenticated via Google on the main site and is an admin
+    if (req.isAuthenticated?.() && ADMIN_EMAILS.includes((req.user?.email || '').toLowerCase())) {
+        const crypto = require('crypto');
+        const token = crypto.randomBytes(32).toString('hex');
+        req.session.adminToken = token;
+        req.session.isAdmin = true;
+        return res.json({ token });
+    }
+    return res.status(401).json({ error: 'Not an admin' });
 });
 
 module.exports = router;

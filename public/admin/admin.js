@@ -132,6 +132,10 @@ function openAddProductModal() {
     document.getElementById('product-form').reset();
     document.getElementById('edit-id').value = '';
     document.getElementById('img-previews').innerHTML = '';
+    document.getElementById('p-stock').value = '';
+    document.getElementById('p-stock-status').value = 'in_stock';
+    document.getElementById('p-sale-price').value = '';
+    isSaleOn = false; updateSaleToggle();
     populateCategorySelect();
     isFeatured = false; updateToggle();
     document.getElementById('product-modal').classList.add('open');
@@ -151,6 +155,8 @@ async function openEditProductModal(id) {
     document.getElementById('p-description').value = p.description || '';
     document.getElementById('p-stock').value = p.stock ?? '';
     document.getElementById('p-stock-status').value = p.stock_status || 'in_stock';
+    document.getElementById('p-sale-price').value = p.sale_price ?? '';
+    isSaleOn = p.is_on_sale || false; updateSaleToggle();
     isFeatured = p.featured || false; updateToggle();
     populateCategorySelect(p.category);
     renderImagePreviews();
@@ -171,6 +177,15 @@ function updateToggle() {
     if (isFeatured) { t.classList.add('on'); l.textContent = 'Featured on homepage'; }
     else { t.classList.remove('on'); l.textContent = 'Not featured'; }
     document.getElementById('p-featured').value = isFeatured;
+}
+
+let isSaleOn = false;
+function toggleSale() { isSaleOn = !isSaleOn; updateSaleToggle(); }
+function updateSaleToggle() {
+    const t = document.getElementById('sale-toggle'), l = document.getElementById('sale-label');
+    if (!t) return;
+    if (isSaleOn) { t.classList.add('on'); l.textContent = 'On Sale 🔥'; l.style.color = '#e07070'; }
+    else { t.classList.remove('on'); l.textContent = 'Not on sale'; l.style.color = ''; }
 }
 
 // Image upload → base64
@@ -208,9 +223,12 @@ async function submitProduct() {
     try {
         const stock = document.getElementById('p-stock').value;
         const stock_status = document.getElementById('p-stock-status').value;
+        const sale_price_val = document.getElementById('p-sale-price').value;
         const body = {
             name, category, price: parseFloat(price), description, featured, images: productImages,
-            stock: stock !== '' ? parseInt(stock) : null, stock_status
+            stock: stock !== '' ? parseInt(stock) : null, stock_status,
+            is_on_sale: isSaleOn,
+            sale_price: sale_price_val !== '' ? parseFloat(sale_price_val) : null
         };
         const editId = document.getElementById('edit-id').value;
         const res = editMode && editId
@@ -240,7 +258,7 @@ function renderCategoriesTable(cats) {
     tbody.innerHTML = cats.map(c => `
     <tr>
       <td><img src="/api/admin/categories/${c.id}/cover" style="width:48px;height:48px;object-fit:cover;border-radius:8px;background:#222;" onerror="this.style.display='none'" /></td>
-      <td style="font-weight:500;">${c.name}</td>
+      <td style="font-weight:500;">${c.parent_id ? '<span style="color:var(--text-muted);font-size:11px;margin-right:6px;">↳</span>' : ''}${c.name}</td>
       <td style="color:var(--text-muted);font-size:13px;">${c.description || '—'}</td>
       <td>
         <div class="td-actions">
@@ -260,6 +278,7 @@ function openAddCatModal() {
     document.getElementById('cat-form').reset();
     document.getElementById('edit-cat-id').value = '';
     document.getElementById('cat-img-preview').innerHTML = '';
+    populateParentCatSelect(null);
     document.getElementById('cat-modal').classList.add('open');
 }
 
@@ -272,7 +291,16 @@ function openEditCatModal(cat) {
     document.getElementById('cat-img-preview').innerHTML = cat.cover_name
         ? `<img src="/api/admin/categories/${cat.id}/cover" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid rgba(201,169,110,0.2);" />`
         : '';
+    populateParentCatSelect(cat.parent_id, cat.id);
     document.getElementById('cat-modal').classList.add('open');
+}
+
+function populateParentCatSelect(selectedId, excludeId = null) {
+    const sel = document.getElementById('cat-parent');
+    if (!sel) return;
+    const topLevel = allCategories.filter(c => !c.parent_id && c.id !== excludeId);
+    sel.innerHTML = '<option value="">— Top Level —</option>' +
+        topLevel.map(c => `<option value="${c.id}" ${c.id == selectedId ? 'selected' : ''}>${c.name}</option>`).join('');
 }
 
 function closeCatModal() { document.getElementById('cat-modal').classList.remove('open'); }
@@ -291,11 +319,12 @@ function handleCatImage(files) {
 async function submitCategory() {
     const name = document.getElementById('cat-name').value.trim();
     const desc = document.getElementById('cat-description').value.trim();
+    const parent_id = document.getElementById('cat-parent')?.value || null;
     if (!name) { showToast('Category name is required.'); return; }
     const btn = document.getElementById('submit-cat-btn');
     btn.disabled = true; btn.textContent = 'Saving…';
     try {
-        const body = { name, description: desc };
+        const body = { name, description: desc, parent_id: parent_id || null };
         if (catImageData) { body.cover_data = catImageData.data; body.cover_name = catImageData.name; }
         const editId = document.getElementById('edit-cat-id').value;
         const res = editId

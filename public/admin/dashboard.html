@@ -847,6 +847,22 @@
                         </select>
                     </div>
                 </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Sale Price (₹) <span
+                                style="color:var(--text-muted);font-size:10px;">(optional — leave blank if no
+                                sale)</span></label>
+                        <input type="number" id="p-sale-price" placeholder="e.g. 799" min="0" />
+                    </div>
+                    <div class="form-group" style="display:flex;flex-direction:column;justify-content:flex-end;">
+                        <label style="margin-bottom:10px;">On Sale</label>
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <div class="toggle-track" id="sale-toggle" onclick="toggleSale()" style="flex-shrink:0;">
+                                <div class="toggle-thumb"></div>
+                            </div>
+                            <span class="toggle-label" id="sale-label">Not on sale</span>
+                        </div>
+                    </div>
+                </div>
                 <div class="featured-row">
                     <div class="toggle-track" id="featured-toggle" onclick="toggleFeatured()">
                         <div class="toggle-thumb"></div>
@@ -878,6 +894,12 @@
                 <input type="hidden" id="edit-cat-id" />
                 <div class="form-group"><label>Category Name *</label><input type="text" id="cat-name"
                         placeholder="e.g. Gold Earrings" required /></div>
+                <div class="form-group"><label>Parent Category <span
+                            style="color:var(--text-muted);font-size:10px;">(leave empty = top-level)</span></label>
+                    <select id="cat-parent">
+                        <option value="">— Top Level —</option>
+                    </select>
+                </div>
                 <div class="form-group"><label>Description</label><textarea id="cat-description" rows="2"
                         placeholder="Short description…"></textarea></div>
                 <div class="form-group">

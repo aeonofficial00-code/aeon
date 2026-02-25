@@ -567,6 +567,8 @@ button {
   letter-spacing: -1px;
   margin-bottom: 32px;
   animation: fadeUp 1s ease 0.5s both;
+  text-align: center;
+
 }
 
 .hero-title em {

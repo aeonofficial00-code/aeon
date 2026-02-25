@@ -56,6 +56,9 @@ async function migrate() {
             )`,
       `ALTER TABLE products ADD COLUMN IF NOT EXISTS stock           INTEGER DEFAULT NULL`,
       `ALTER TABLE products ADD COLUMN IF NOT EXISTS stock_status    VARCHAR(20) DEFAULT 'in_stock'`,
+      `ALTER TABLE categories ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES categories(id) ON DELETE SET NULL`,
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS sale_price NUMERIC(10,2) DEFAULT NULL`,
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS is_on_sale BOOLEAN DEFAULT false`,
     ];
     for (const sql of alterations) {
       await client.query(sql);

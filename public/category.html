@@ -72,6 +72,10 @@
     <!-- PRODUCTS -->
     <section style="padding:60px 0 100px;">
         <div class="container">
+            <!-- Subcategory chips -->
+            <div id="subcategory-chips"
+                style="display:none;margin-bottom:32px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;"></div>
+
             <div class="filter-bar reveal">
                 <p id="product-count">Loading products…</p>
                 <select class="sort-select" id="sort-select">
@@ -211,7 +215,22 @@
 
             allProducts = products;
 
-            // Set header bg using thumb URL (new API format)
+            // Load subcategory chips
+            const subs = await fetch(`/api/subcategories?parent=${encodeURIComponent(catName)}`).then(r => r.json()).catch(() => []);
+            const chipsEl = document.getElementById('subcategory-chips');
+            if (subs.length) {
+                chipsEl.style.display = 'flex';
+                chipsEl.innerHTML =
+                    '<span style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-right:4px;">Filter:</span>' +
+                    '<button onclick="renderProducts(allProducts)" style="padding:7px 18px;border-radius:30px;border:1px solid rgba(201,169,110,0.4);background:rgba(201,169,110,0.12);color:var(--gold);font-size:12px;letter-spacing:1px;cursor:pointer;">All</button>' +
+                    subs.map(s =>
+                        '<button onclick="filterBySubcat(\'' + s.name.replace(/'/g, "\\'") + '\')" style="padding:7px 18px;border-radius:30px;border:1px solid rgba(201,169,110,0.25);background:transparent;color:var(--text-muted);font-size:12px;letter-spacing:1px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor=\'rgba(201,169,110,0.6)\';this.style.color=\'var(--gold)\'" onmouseout="this.style.borderColor=\'rgba(201,169,110,0.25)\';this.style.color=\'var(--text-muted)\'">' + s.name + ' <span style="opacity:0.5;font-size:10px;">(' + s.count + ')</span></button>'
+                    ).join('');
+            } else {
+                chipsEl.style.display = 'none';
+            }
+
+            // Set header bg using thumb URL
             const firstThumb = products.length ? (products[0].thumb || '') : '';
             if (firstThumb) {
                 const bg = document.getElementById('header-bg-img');
@@ -226,8 +245,8 @@
 
             renderProducts(products);
 
-            // Other categories
-            const others = allCats.filter(c => c.name !== catName).slice(0, 6);
+            // Other categories (top-level only)
+            const others = allCats.filter(c => c.name !== catName && !c.parent_id).slice(0, 6);
             const otherGrid = document.getElementById('other-cats');
             otherGrid.innerHTML = others.map(cat => `
     <div class="category-card reveal" onclick="location.href='category.html?c=${encodeURIComponent(cat.name)}'">
@@ -243,6 +262,11 @@
 
             setupReveal();
             if (window.lucide) lucide.createIcons();
+        }
+
+        function filterBySubcat(subcatName) {
+            const filtered = allProducts.filter(p => p.category.toLowerCase() === subcatName.toLowerCase());
+            renderProducts(filtered.length ? filtered : allProducts);
         }
 
         function sortProducts(arr, mode) {

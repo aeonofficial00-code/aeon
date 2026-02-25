@@ -20,18 +20,45 @@ router.get('/categories', async (req, res) => {
     try {
         const { rows } = await pool.query(`
       SELECT
+        c.id,
         c.name,
         c.description,
+        c.parent_id,
         (SELECT COUNT(*) FROM products p WHERE LOWER(p.category) = LOWER(c.name)) AS count,
         CASE WHEN c.cover_data IS NOT NULL THEN '/api/categories/' || c.id || '/cover' ELSE NULL END AS cover
       FROM categories c
-      ORDER BY c.name
+      ORDER BY c.parent_id NULLS FIRST, c.name
     `);
-        res.json(rows.map(r => ({ ...r, count: parseInt(r.count) })));
+        // Build subcategories map
+        const cats = rows.map(r => ({ ...r, count: parseInt(r.count), subcategories: [] }));
+        const byId = Object.fromEntries(cats.map(c => [c.id, c]));
+        const top = [];
+        cats.forEach(c => {
+            if (c.parent_id && byId[c.parent_id]) byId[c.parent_id].subcategories.push(c);
+            else if (!c.parent_id) top.push(c);
+        });
+        res.json(cats); // flat list with subcategories nested
     } catch (err) {
         console.error('/api/categories error:', err.message);
         res.status(500).json({ error: 'Database error', detail: err.message });
     }
+});
+
+// ── GET /api/subcategories?parent=Name ────────────────────────────────
+router.get('/subcategories', async (req, res) => {
+    try {
+        const { parent } = req.query;
+        if (!parent) return res.json([]);
+        const { rows } = await pool.query(
+            `SELECT c.id, c.name, (SELECT COUNT(*) FROM products p WHERE LOWER(p.category) = LOWER(c.name)) AS count
+             FROM categories c
+             JOIN categories p ON c.parent_id = p.id
+             WHERE LOWER(p.name) = LOWER($1)
+             ORDER BY c.name`,
+            [parent]
+        );
+        res.json(rows.map(r => ({ ...r, count: parseInt(r.count) })));
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ── GET /api/categories/:id/cover (serve binary image, cached) ────────────────
@@ -51,7 +78,7 @@ router.get('/products', async (req, res) => {
         const { category } = req.query;
         const cat = category ? decodeURIComponent(category) : null;
         const { rows } = await pool.query(
-            `SELECT id, name, category, price, description, featured, created_at,
+            `SELECT id, name, category, price, description, featured, is_on_sale, sale_price, stock, stock_status, created_at,
               '/api/products/' || id || '/thumb' AS thumb
        FROM products
        ${cat ? "WHERE LOWER(category) = LOWER($1)" : ""}
@@ -115,7 +142,19 @@ router.get('/featured', async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Database error' }); }
 });
 
-// ── GET /api/products/:id/reviews ────────────────────────────────────────────
+// ── GET /api/sale ──────────────────────────────────────────────────────
+router.get('/sale', async (req, res) => {
+    try {
+        const { rows } = await pool.query(
+            `SELECT id, name, category, price, sale_price, is_on_sale, description, created_at,
+              '/api/products/' || id || '/thumb' AS thumb
+       FROM products WHERE is_on_sale=true ORDER BY created_at DESC`
+        );
+        res.json(rows);
+    } catch (err) { res.status(500).json({ error: 'Database error' }); }
+});
+
+// ── GET /api/products/:id/reviews ─────────────────────────────────────────────
 router.get('/products/:id/reviews', async (req, res) => {
     try {
         const { rows } = await pool.query(

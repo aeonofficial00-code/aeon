@@ -89,12 +89,12 @@ router.get('/categories/:id/cover', async (req, res) => {
 // ── POST /api/admin/categories ────────────────────────────────────────────────
 router.post('/categories', auth, express.json({ limit: '25mb' }), async (req, res) => {
     try {
-        const { name, description, cover_data, cover_name } = req.body;
+        const { name, description, cover_data, cover_name, parent_id } = req.body;
         if (!name) return res.status(400).json({ error: 'Name required' });
         const { rows } = await pool.query(
-            `INSERT INTO categories (name, description, cover_data, cover_name)
-       VALUES ($1,$2,$3,$4) RETURNING id, name, description, cover_name, created_at`,
-            [name.trim(), description || '', cover_data || null, cover_name || null]
+            `INSERT INTO categories (name, description, cover_data, cover_name, parent_id)
+       VALUES ($1,$2,$3,$4,$5) RETURNING id, name, description, cover_name, parent_id, created_at`,
+            [name.trim(), description || '', cover_data || null, cover_name || null, parent_id || null]
         );
         res.json(rows[0]);
     } catch (err) {
@@ -175,8 +175,9 @@ router.post('/products', auth, express.json({ limit: '50mb' }), async (req, res)
 // ── PUT /api/admin/products/:id ───────────────────────────────────────────────
 router.put('/products/:id', auth, express.json({ limit: '50mb' }), async (req, res) => {
     try {
-        const { name, category, price, description, featured, images, stock, stock_status } = req.body;
+        const { name, category, price, description, featured, images, stock, stock_status, is_on_sale, sale_price } = req.body;
         const stockVal = (stock !== undefined && stock !== '') ? parseInt(stock) : null;
+        const salePriceVal = (sale_price !== undefined && sale_price !== '') ? parseFloat(sale_price) : null;
         const { rows } = await pool.query(
             `UPDATE products SET
         name        = COALESCE($1, name),
@@ -187,12 +188,16 @@ router.put('/products/:id', auth, express.json({ limit: '50mb' }), async (req, r
         featured    = COALESCE($6, featured),
         stock       = $7,
         stock_status = COALESCE($8, stock_status),
+        is_on_sale  = COALESCE($9, is_on_sale),
+        sale_price  = $10,
         updated_at  = NOW()
-       WHERE id = $9 RETURNING *`,
+       WHERE id = $11 RETURNING *`,
             [name || null, category || null, price ? parseFloat(price) : null, description || null,
             images ? JSON.stringify(images) : null,
             featured !== undefined ? (featured === true || featured === 'true') : null,
                 stockVal, stock_status || null,
+            is_on_sale !== undefined ? (is_on_sale === true || is_on_sale === 'true') : null,
+                salePriceVal,
             req.params.id]
         );
         if (!rows.length) return res.status(404).json({ error: 'Not found' });
