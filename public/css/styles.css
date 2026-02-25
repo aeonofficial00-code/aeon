@@ -536,7 +536,7 @@ button {
 .hero-content {
   position: relative;
   z-index: 2;
-  max-width: 800px;
+  max-width: 600px;
 }
 
 .hero-eyebrow {
@@ -578,7 +578,7 @@ button {
   font-size: 18px;
   color: var(--text-muted);
   font-family: 'Times New Roman', Times, serif;
-  max-width: 600px;
+  max-width: 400px;
   line-height: 1.8;
   margin-bottom: 48px;
   animation: fadeUp 1s ease 0.7s both;
