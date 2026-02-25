@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Page Not Found – AEON Jewellery</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="icon" type="image/png" href="/images/favicon.png" />
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+            padding: 24px;
+            overflow: hidden;
+        }
+
+        .num {
+            font-family: var(--font-heading);
+            font-size: clamp(100px, 20vw, 200px);
+            line-height: 1;
+            letter-spacing: 8px;
+            background: linear-gradient(135deg, rgba(201, 169, 110, 0.15), rgba(201, 169, 110, 0.05));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: -20px;
+            animation: float 4s ease-in-out infinite;
+        }
+
+        h1 {
+            font-family: var(--font-heading);
+            font-size: clamp(24px, 4vw, 40px);
+            letter-spacing: 4px;
+            color: var(--gold);
+            margin-bottom: 12px;
+        }
+
+        p {
+            color: var(--text-muted);
+            font-size: 15px;
+            max-width: 380px;
+            line-height: 1.8;
+            margin-bottom: 36px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .gold-line {
+            width: 60px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            margin: 28px auto;
+        }
+
+        /* floating particles */
+        .p404-particle {
+            position: fixed;
+            width: 2px;
+            height: 2px;
+            background: var(--gold);
+            border-radius: 50%;
+            animation: float var(--d, 4s) ease-in-out infinite;
+            opacity: var(--o, 0.3);
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0)
+            }
+
+            50% {
+                transform: translateY(calc(var(--amp, -15px)))
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="num">404</div>
+    <div class="gold-line"></div>
+    <h1>Page Not Found</h1>
+    <p>The page you're looking for doesn't exist or has been moved. Let's get you back to something beautiful.</p>
+    <div class="actions">
+        <a href="/" class="btn btn-gold">Back to Home</a>
+        <a href="/#collections" class="btn btn-outline">Shop Collections</a>
+    </div>
+    <script>
+        for (let i = 0; i < 18; i++) {
+            const el = document.createElement('div');
+            el.className = 'p404-particle';
+            el.style.cssText = `left:${Math.random() * 100}%;top:${Math.random() * 100}%;--d:${3 + Math.random() * 4}s;--o:${0.1 + Math.random() * 0.3};--amp:${-10 - Math.random() * 20}px;animation-delay:${Math.random() * 3}s;`;
+            document.body.appendChild(el);
+        }
+    </script>
+</body>
+
+</html>

@@ -125,11 +125,14 @@ app.get('/checkout', (req, res) => res.sendFile(path.join(__dirname, 'public', '
 app.get('/order-success', (req, res) => res.sendFile(path.join(__dirname, 'public', 'order-success.html')));
 app.get('/orders', (req, res) => res.sendFile(path.join(__dirname, 'public', 'orders.html')));
 
-// ── Catch-all (serve index.html) ─────────────────────────────────────────────
+// ── Catch-all (serve index.html or 404) ──────────────────────────────────────
 app.get('/{*splat}', (req, res) => {
     const file = path.join(__dirname, 'public', 'index.html');
     if (fs.existsSync(file)) res.sendFile(file);
-    else res.status(404).send('Not found');
+    else {
+        const notFound = path.join(__dirname, 'public', '404.html');
+        res.status(404).sendFile(fs.existsSync(notFound) ? notFound : file);
+    }
 });
 
 // ── Startup ───────────────────────────────────────────────────────────────────

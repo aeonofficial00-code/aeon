@@ -188,6 +188,7 @@ function setupNav() {
   document.getElementById('cart-btn')?.addEventListener('click', openCart);
   document.getElementById('cart-close')?.addEventListener('click', closeCart);
   document.getElementById('cart-overlay')?.addEventListener('click', closeCart);
+  document.getElementById('search-btn')?.addEventListener('click', openSearch);
 
   // Load user state from session
   loadUserState();
@@ -238,6 +239,9 @@ function loadUserState() {
             onmouseout="this.style.color='rgba(255,255,255,0.2)'">out</a>
         </div>
       `;
+      // Show mobile orders link
+      const mobileOrders = document.getElementById('mobile-orders-link');
+      if (mobileOrders) mobileOrders.style.display = 'block';
     } else {
       userSlot.style.cssText = 'display:flex;align-items:center;';
       userSlot.innerHTML = `
@@ -254,6 +258,56 @@ function loadUserState() {
       `;
     }
   }).catch(() => { });
+}
+
+// ── SEARCH ────────────────────────────────────────
+let _searchCache = null, _searchTimer = null;
+
+function openSearch() {
+  const overlay = document.getElementById('search-overlay');
+  if (!overlay) return;
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('search-input')?.focus(), 80);
+  if (!_searchCache) fetch('/api/products').then(r => r.json()).then(d => { _searchCache = d; }).catch(() => { });
+}
+
+function closeSearch() {
+  document.getElementById('search-overlay')?.classList.remove('open');
+  document.body.style.overflow = '';
+  if (document.getElementById('search-input')) document.getElementById('search-input').value = '';
+  document.getElementById('search-results').innerHTML = '<p class="search-hint">Type to search products…</p>';
+}
+
+function handleSearchOverlayClick(e) {
+  if (e.target === document.getElementById('search-overlay')) closeSearch();
+}
+
+function doSearch(q) {
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(() => _runSearch(q.trim()), 180);
+}
+
+function _runSearch(q) {
+  const results = document.getElementById('search-results');
+  if (!q) { results.innerHTML = '<p class="search-hint">Type to search products…</p>'; return; }
+  const src = _searchCache || [];
+  const matches = src.filter(p =>
+    p.name.toLowerCase().includes(q.toLowerCase()) ||
+    (p.category || '').toLowerCase().includes(q.toLowerCase())
+  ).slice(0, 10);
+  if (!matches.length) { results.innerHTML = '<p class="search-hint">No products found for "' + q + '"</p>'; return; }
+  results.innerHTML = matches.map((p, i) => {
+    const img = p.thumb || '';
+    return `<a class="search-result-item" href="/product.html?id=${p.id}" onclick="closeSearch()" style="animation-delay:${i * 30}ms">
+      <img class="search-result-img" src="${img}" alt="${p.name}" onerror="this.style.display='none'"/>
+      <div style="flex:1;min-width:0;">
+        <div class="search-result-name">${p.name}</div>
+        <div class="search-result-cat">${p.category}</div>
+      </div>
+      <div class="search-result-price">₹${parseFloat(p.price).toLocaleString('en-IN')}</div>
+    </a>`;
+  }).join('');
 }
 
 
