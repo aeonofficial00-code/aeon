@@ -222,9 +222,9 @@
                 chipsEl.style.display = 'flex';
                 chipsEl.innerHTML =
                     '<span style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-right:4px;">Filter:</span>' +
-                    '<button onclick="renderProducts(allProducts)" style="padding:7px 18px;border-radius:30px;border:1px solid rgba(201,169,110,0.4);background:rgba(201,169,110,0.12);color:var(--gold);font-size:12px;letter-spacing:1px;cursor:pointer;">All</button>' +
+                    '<button class="subcat-chip active" onclick="filterBySubcat(null, this)">All</button>' +
                     subs.map(s =>
-                        '<button onclick="filterBySubcat(\'' + s.name.replace(/'/g, "\\'") + '\')" style="padding:7px 18px;border-radius:30px;border:1px solid rgba(201,169,110,0.25);background:transparent;color:var(--text-muted);font-size:12px;letter-spacing:1px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor=\'rgba(201,169,110,0.6)\';this.style.color=\'var(--gold)\'" onmouseout="this.style.borderColor=\'rgba(201,169,110,0.25)\';this.style.color=\'var(--text-muted)\'">' + s.name + ' <span style="opacity:0.5;font-size:10px;">(' + s.count + ')</span></button>'
+                        `<button class="subcat-chip" onclick="filterBySubcat('${s.name.replace(/'/g, "\\'")}', this)">${s.name} <span style="opacity:0.5;font-size:10px;">(${s.count})</span></button>`
                     ).join('');
             } else {
                 chipsEl.style.display = 'none';
@@ -264,9 +264,22 @@
             if (window.lucide) lucide.createIcons();
         }
 
-        function filterBySubcat(subcatName) {
+        let activeSubcat = null;
+        function filterBySubcat(subcatName, btnEl) {
+            document.querySelectorAll('.subcat-chip').forEach(b => b.classList.remove('active'));
+            if (!subcatName || activeSubcat === subcatName) {
+                activeSubcat = null;
+                renderProducts(allProducts);
+                // The "All" button is the first subcat-chip
+                if (!subcatName && btnEl) btnEl.classList.add('active');
+                else document.querySelector('.subcat-chip').classList.add('active');
+                return;
+            }
+            activeSubcat = subcatName;
+            if (btnEl) btnEl.classList.add('active');
+
             const filtered = allProducts.filter(p => p.category.toLowerCase() === subcatName.toLowerCase());
-            renderProducts(filtered.length ? filtered : allProducts);
+            renderProducts(filtered);
         }
 
         function sortProducts(arr, mode) {

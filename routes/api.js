@@ -78,11 +78,13 @@ router.get('/products', async (req, res) => {
         const { category } = req.query;
         const cat = category ? decodeURIComponent(category) : null;
         const { rows } = await pool.query(
-            `SELECT id, name, category, price, description, featured, is_on_sale, sale_price, stock, stock_status, created_at,
-              '/api/products/' || id || '/thumb' AS thumb
-       FROM products
-       ${cat ? "WHERE LOWER(category) = LOWER($1)" : ""}
-       ORDER BY featured DESC, created_at DESC`,
+            `SELECT p.id, p.name, p.category, p.price, p.description, p.featured, p.is_on_sale, p.sale_price, p.stock, p.stock_status, p.created_at,
+              '/api/products/' || p.id || '/thumb' AS thumb
+       FROM products p
+       LEFT JOIN categories c ON LOWER(p.category) = LOWER(c.name)
+       LEFT JOIN categories parent ON c.parent_id = parent.id
+       ${cat ? "WHERE LOWER(p.category) = LOWER($1) OR LOWER(parent.name) = LOWER($1)" : ""}
+       ORDER BY p.featured DESC, p.created_at DESC`,
             cat ? [cat] : []
         );
         res.json(rows);
