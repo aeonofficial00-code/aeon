@@ -278,7 +278,7 @@
             activeSubcat = subcatName;
             if (btnEl) btnEl.classList.add('active');
 
-            const filtered = allProducts.filter(p => p.category.toLowerCase() === subcatName.toLowerCase());
+            const filtered = allProducts.filter(p => p.category.trim().toLowerCase() === subcatName.trim().toLowerCase());
             renderProducts(filtered);
         }
 
