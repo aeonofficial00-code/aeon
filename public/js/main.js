@@ -223,6 +223,13 @@ function loadUserState() {
         <div style="display:flex;align-items:center;gap:6px;padding:0 2px;border-left:1px solid rgba(255,255,255,0.07);padding-left:8px;">
           <span style="font-size:11.5px;color:rgba(255,255,255,0.45);letter-spacing:0.3px;">${firstName}</span>
           <span style="color:rgba(255,255,255,0.1);font-size:10px;">·</span>
+          <a href="/orders" style="
+            font-size:10.5px;letter-spacing:0.5px;
+            color:rgba(255,255,255,0.3);text-decoration:none;
+            transition:color 0.2s;"
+            onmouseover="this.style.color='var(--gold)'"
+            onmouseout="this.style.color='rgba(255,255,255,0.3)'">Orders</a>
+          <span style="color:rgba(255,255,255,0.1);font-size:10px;">·</span>
           <a href="/auth/logout" style="
             font-size:10.5px;letter-spacing:0.5px;
             color:rgba(255,255,255,0.2);text-decoration:none;

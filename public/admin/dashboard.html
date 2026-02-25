@@ -543,6 +543,7 @@
         <nav class="sidebar-nav">
             <button class="sidebar-link active" onclick="showTab('products')">📦 Products</button>
             <button class="sidebar-link" onclick="showTab('categories')">🗂️ Categories</button>
+            <button class="sidebar-link" onclick="showTab('orders')">🛒 Orders</button>
             <button class="sidebar-link" onclick="showTab('users')">👤 Users</button>
             <a href="/" class="sidebar-link" style="text-decoration:none;" target="_blank">🌐 View Store</a>
         </nav>
@@ -659,6 +660,37 @@
                     </table>
                 </div>
             </div>
+
+            <!-- ORDERS TAB -->
+            <div id="tab-orders" class="tab-content" style="display:none;">
+                <div class="table-wrap">
+                    <div class="table-header">
+                        <span style="font-size:14px;letter-spacing:1px;color:var(--gold);">All Orders</span>
+                        <div class="search-box"><input type="text" placeholder="Search by name, ID…"
+                                oninput="filterOrders(this.value)" /></div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Customer</th>
+                                <th>Items</th>
+                                <th>Address</th>
+                                <th>Total</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orders-tbody">
+                            <tr>
+                                <td colspan="8" style="padding:40px;text-align:center;color:var(--text-muted);">Loading…
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -750,17 +782,96 @@
     <script src="/admin/admin.js"></script>
     <script>
         checkAuth();
-        // Update tab title + add button when tab changes
         const _showTab = showTab;
         window.showTab = function (tab) {
             _showTab(tab);
-            const titles = { products: 'Products', categories: 'Categories', users: 'Users' };
+            const titles = { products: 'Products', categories: 'Categories', users: 'Users', orders: 'Orders' };
             document.getElementById('tab-title').textContent = titles[tab] || tab;
             const addBtn = document.getElementById('add-btn');
             if (tab === 'products') { addBtn.textContent = '+ Add Product'; addBtn.onclick = openAddProductModal; addBtn.style.display = ''; }
             else if (tab === 'categories') { addBtn.textContent = '+ Add Category'; addBtn.onclick = openAddCatModal; addBtn.style.display = ''; }
             else { addBtn.style.display = 'none'; }
+            if (tab === 'orders') loadAdminOrders();
         };
+
+        let allOrders = [];
+        async function loadAdminOrders() {
+            const tbody = document.getElementById('orders-tbody');
+            try {
+                const res = await fetch('/api/admin/orders', { headers: { 'x-admin-token': getToken() } });
+                allOrders = await res.json();
+                renderOrdersTable(allOrders);
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="8" style="padding:40px;text-align:center;color:var(--text-muted);">Failed to load orders.</td></tr>`;
+            }
+        }
+
+        function renderOrdersTable(orders) {
+            const tbody = document.getElementById('orders-tbody');
+            if (!orders.length) {
+                tbody.innerHTML = `<tr><td colspan="8" style="padding:40px;text-align:center;color:var(--text-muted);">No orders yet.</td></tr>`;
+                return;
+            }
+            const statusColors = { paid: '#5cb85c', pending: '#f0ad4e', processing: '#5bc0de', shipped: '#9E7A40', delivered: '#5cb85c', cancelled: '#d9534f' };
+            tbody.innerHTML = orders.map(o => {
+                const addr = o.address || {};
+                const items = o.items || [];
+                const statusOpts = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+                return `<tr>
+                    <td style="font-size:11px;color:var(--gold);font-family:monospace;">#${o.id.slice(0, 8).toUpperCase()}</td>
+                    <td>
+                        <div style="font-weight:500;">${addr.name || o.guest_email || 'Guest'}</div>
+                        <div style="font-size:11px;color:var(--text-muted);">${addr.phone || ''}</div>
+                    </td>
+                    <td>
+                        <div style="display:flex;gap:4px;flex-wrap:wrap;">${items.slice(0, 3).map(i => `<img src="${i.thumb || ''}" title="${i.name}" style="width:36px;height:36px;border-radius:6px;object-fit:cover;border:1px solid rgba(201,169,110,0.15);background:#1a1a1a;" onerror="this.style.display='none'"/>`).join('')}</div>
+                        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${items.length} item${items.length !== 1 ? 's' : ''}</div>
+                    </td>
+                    <td style="font-size:12px;color:var(--text-muted);max-width:160px;">
+                        ${addr.line1 || '—'}<br/>
+                        ${addr.city || ''}, ${addr.state || ''} ${addr.pincode || ''}
+                    </td>
+                    <td style="color:var(--gold);font-weight:600;">₹${parseFloat(o.total).toLocaleString('en-IN')}</td>
+                    <td style="font-size:11px;color:var(--text-muted);">${new Date(o.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+                    <td>
+                        <select id="status-${o.id}" style="background:rgba(${getStatusRgb(o.status)},0.1);border:1px solid rgba(${getStatusRgb(o.status)},0.3);color:${statusColors[o.status] || '#888'};border-radius:8px;padding:5px 8px;font-size:11px;letter-spacing:1px;text-transform:uppercase;outline:none;cursor:pointer;">
+                            ${statusOpts.map(s => `<option value="${s}" ${s === o.status ? 'selected' : ''}>${s}</option>`).join('')}
+                        </select>
+                    </td>
+                    <td>
+                        <button onclick="updateOrderStatus('${o.id}')" class="btn btn-outline" style="font-size:11px;padding:6px 12px;">Update</button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function getStatusRgb(s) {
+            return { paid: '92,184,92', pending: '240,173,78', processing: '91,192,222', shipped: '158,122,64', delivered: '92,184,92', cancelled: '217,83,79' }[s] || '136,136,136';
+        }
+
+        function filterOrders(q) {
+            const filtered = allOrders.filter(o => {
+                const addr = o.address || {};
+                return (addr.name || '').toLowerCase().includes(q.toLowerCase()) ||
+                    o.id.toLowerCase().includes(q.toLowerCase()) ||
+                    (o.guest_email || '').toLowerCase().includes(q.toLowerCase());
+            });
+            renderOrdersTable(filtered);
+        }
+
+        async function updateOrderStatus(orderId) {
+            const select = document.getElementById('status-' + orderId);
+            const newStatus = select.value;
+            const res = await fetch(`/api/admin/orders/${orderId}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'x-admin-token': getToken() },
+                body: JSON.stringify({ status: newStatus })
+            });
+            if (res.ok) {
+                select.style.background = 'rgba(92,184,92,0.15)';
+                setTimeout(() => loadAdminOrders(), 800);
+            } else { alert('Failed to update status.'); }
+        }
     </script>
 </body>
 

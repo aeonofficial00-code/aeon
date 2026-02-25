@@ -10,10 +10,39 @@ const validTokens = new Map();
 
 // ── Auth middleware ───────────────────────────────────────────────────────────
 function auth(req, res, next) {
-    const token = req.headers['x-admin-token'];
-    if (token && (validTokens.has(token) || req.session?.adminToken === token)) return next();
+    const token = req.headers['x-admin-token'] || req.query.token;
+    if (!token) return res.status(401).json({ error: 'No token' });
+    if (req.session?.adminToken && req.session.adminToken === token) return next();
+    if (req.session?.isAdmin) return next();
+    if (req.isAuthenticated?.() && ADMIN_EMAILS.includes((req.user?.email || '').toLowerCase())) return next();
     return res.status(401).json({ error: 'Unauthorized' });
 }
+
+// ── GET /api/admin/orders – all orders with items + address ───────────────────
+router.get('/orders', auth, async (req, res) => {
+    try {
+        const { rows } = await pool.query(
+            `SELECT id, user_id, guest_email, items, address, subtotal, delivery_charge, total,
+              status, razorpay_order_id, razorpay_payment_id, created_at
+       FROM orders ORDER BY created_at DESC`
+        );
+        res.json(rows);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── PATCH /api/admin/orders/:id/status – update delivery status ───────────────
+router.patch('/orders/:id/status', auth, express.json(), async (req, res) => {
+    const allowed = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+    const { status } = req.body;
+    if (!allowed.includes(status)) return res.status(400).json({ error: 'Invalid status' });
+    try {
+        await pool.query(
+            `UPDATE orders SET status=$1, updated_at=NOW() WHERE id=$2`,
+            [status, req.params.id]
+        );
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
 
 // ── POST /api/admin/login ─────────────────────────────────────────────────────
 router.post('/login', (req, res) => {
