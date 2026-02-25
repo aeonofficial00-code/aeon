@@ -115,21 +115,65 @@ router.get('/featured', async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Database error' }); }
 });
 
-// ── GET /api/debug (check DB state on Render) ─────────────────────────────────
+// ── GET /api/products/:id/reviews ────────────────────────────────────────────
+router.get('/products/:id/reviews', async (req, res) => {
+    try {
+        const { rows } = await pool.query(
+            `SELECT id, reviewer_name, rating, comment, created_at
+             FROM reviews WHERE product_id=$1 ORDER BY created_at DESC`,
+            [req.params.id]
+        );
+        const avg = rows.length ? (rows.reduce((s, r) => s + r.rating, 0) / rows.length) : 0;
+        res.json({ reviews: rows, avg: Math.round(avg * 10) / 10, count: rows.length });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── POST /api/products/:id/reviews ───────────────────────────────────────────
+router.post('/products/:id/reviews', express.json(), async (req, res) => {
+    const { name, rating, comment } = req.body;
+    if (!name || !rating || rating < 1 || rating > 5)
+        return res.status(400).json({ error: 'Name and rating (1-5) required' });
+    try {
+        const userId = req.isAuthenticated?.() ? req.user?.id : null;
+        const { rows } = await pool.query(
+            `INSERT INTO reviews (product_id, user_id, reviewer_name, rating, comment)
+             VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+            [req.params.id, userId, name.slice(0, 60), parseInt(rating), comment?.slice(0, 500) || null]
+        );
+        res.json(rows[0]);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── GET /api/stats (admin revenue dashboard) ──────────────────────────────────
+router.get('/stats', async (req, res) => {
+    try {
+        const [orders, products, users, revenue] = await Promise.all([
+            pool.query(`SELECT COUNT(*), status FROM orders GROUP BY status`),
+            pool.query(`SELECT COUNT(*) FROM products`),
+            pool.query(`SELECT COUNT(*) FROM users`),
+            pool.query(`SELECT COALESCE(SUM(total),0) AS revenue FROM orders WHERE status IN ('paid','delivered','shipped')`)
+        ]);
+        const statusMap = {};
+        orders.rows.forEach(r => statusMap[r.status] = parseInt(r.count));
+        res.json({
+            totalOrders: Object.values(statusMap).reduce((a, b) => a + b, 0),
+            pending: statusMap.pending || 0,
+            revenue: parseFloat(revenue.rows[0].revenue),
+            products: parseInt(products.rows[0].count),
+            users: parseInt(users.rows[0].count)
+        });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── GET /api/debug ────────────────────────────────────────────────────────────
 router.get('/debug', async (req, res) => {
     try {
         const [cats, prods] = await Promise.all([
             pool.query('SELECT COUNT(*) FROM categories'),
             pool.query('SELECT COUNT(*) FROM products')
         ]);
-        res.json({
-            status: 'ok',
-            categories: parseInt(cats.rows[0].count),
-            products: parseInt(prods.rows[0].count)
-        });
-    } catch (err) {
-        res.status(500).json({ status: 'error', message: err.message });
-    }
+        res.json({ status: 'ok', categories: parseInt(cats.rows[0].count), products: parseInt(prods.rows[0].count) });
+    } catch (err) { res.status(500).json({ status: 'error', message: err.message }); }
 });
 
 module.exports = router;

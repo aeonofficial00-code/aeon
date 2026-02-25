@@ -50,7 +50,21 @@ async function apiFetch(url, opts = {}) {
 
 // ── INIT ─────────────────────────────────────
 async function loadDashboard() {
-    await Promise.all([loadProducts(), loadCategories()]);
+    await Promise.all([loadProducts(), loadCategories(), loadDashStats()]);
+}
+
+async function loadDashStats() {
+    try {
+        const res = await fetch('/api/stats');
+        if (!res.ok) return;
+        const s = await res.json();
+        const fmt = v => '₹' + Math.round(v).toLocaleString('en-IN');
+        document.getElementById('stat-revenue').textContent = fmt(s.revenue);
+        document.getElementById('stat-orders').textContent = s.totalOrders;
+        document.getElementById('stat-pending').textContent = s.pending;
+        document.getElementById('stat-total').textContent = s.products;
+        document.getElementById('stat-users').textContent = s.users;
+    } catch (e) { }
 }
 
 // ── TABS ─────────────────────────────────────
@@ -74,16 +88,7 @@ async function loadProducts() {
         const res = await apiFetch('/api/admin/products');
         allProducts = await res.json();
         renderProductsTable(allProducts);
-        updateStats(allProducts);
     } catch (e) { showToast('Error loading products.'); }
-}
-
-function updateStats(products) {
-    document.getElementById('stat-total').textContent = products.length;
-    document.getElementById('stat-cats').textContent = allCategories.length || new Set(products.map(p => p.category)).size;
-    document.getElementById('stat-featured').textContent = products.filter(p => p.featured).length;
-    const avg = products.length ? Math.round(products.reduce((s, p) => s + parseFloat(p.price), 0) / products.length) : 0;
-    document.getElementById('stat-avg').textContent = `₹${avg.toLocaleString('en-IN')}`;
 }
 
 function renderProductsTable(products) {

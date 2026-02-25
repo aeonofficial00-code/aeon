@@ -5,7 +5,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Product – AEON Jewellery</title>
-    <meta name="description" content="View product details at AEON Jewellery. Premium gold-plated jewellery." />
+    <meta name="description" content="View product details at AEON Jewellery. Premium 24K gold-plated jewellery." />
+    <meta property="og:site_name" content="AEON Jewellery" />
+    <meta property="og:type" content="product" />
+    <meta property="og:title" id="og-title" content="AEON Jewellery" />
+    <meta property="og:description" id="og-desc" content="Premium 24K gold-plated jewellery" />
+    <meta property="og:image" id="og-image" content="" />
+    <meta property="og:url" content="" />
     <link rel="stylesheet" href="/css/styles.css" />
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
 </head>
@@ -61,13 +67,77 @@
         </div>
 
         <!-- RELATED PRODUCTS -->
-        <section style="padding:60px 0 100px;background:var(--dark-2);">
+        <section style="padding:60px 0 80px;background:var(--dark-2);">
             <div class="container">
                 <div style="text-align:center;margin-bottom:48px;" class="reveal">
                     <p class="section-label">You Might Also Like</p>
                     <h2 class="section-title">Related <span class="gold-text">Pieces</span></h2>
                 </div>
                 <div class="products-grid" id="related-grid"></div>
+            </div>
+        </section>
+
+        <!-- REVIEWS SECTION -->
+        <section id="reviews-section" style="padding:80px 0;background:var(--dark);">
+            <div class="container" style="max-width:860px;">
+                <div style="text-align:center;margin-bottom:52px;">
+                    <p class="section-label">Customer Reviews</p>
+                    <h2 class="section-title">What They <span class="gold-text">Say</span></h2>
+                    <div id="avg-rating-display"
+                        style="margin-top:20px;display:flex;align-items:center;justify-content:center;gap:10px;"></div>
+                </div>
+                <div id="reviews-list" style="display:flex;flex-direction:column;gap:16px;margin-bottom:52px;"></div>
+                <!-- Write a Review -->
+                <div
+                    style="background:rgba(255,255,255,0.02);border:1px solid rgba(201,169,110,0.12);border-radius:20px;padding:32px;">
+                    <h3
+                        style="font-family:var(--font-heading);font-size:22px;color:var(--gold);letter-spacing:2px;margin-bottom:24px;">
+                        Write a Review</h3>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+                        <div>
+                            <label
+                                style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:8px;">Your
+                                Name *</label>
+                            <input id="rv-name" type="text" placeholder="Your name"
+                                style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(201,169,110,0.15);border-radius:10px;padding:11px 14px;color:#fff;font-family:var(--font-body);font-size:13px;outline:none;transition:border-color 0.2s;"
+                                onfocus="this.style.borderColor='var(--gold)'"
+                                onblur="this.style.borderColor='rgba(201,169,110,0.15)'" />
+                        </div>
+                        <div>
+                            <label
+                                style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:8px;">Rating
+                                *</label>
+                            <div id="star-picker" style="display:flex;gap:6px;margin-top:4px;" data-rating="0">
+                                <span class="rv-star" data-v="1"
+                                    style="font-size:26px;cursor:pointer;color:rgba(255,255,255,0.15);transition:color 0.15s;"
+                                    onmouseover="hoverStars(1)" onmouseout="resetStars()" onclick="pickStar(1)">★</span>
+                                <span class="rv-star" data-v="2"
+                                    style="font-size:26px;cursor:pointer;color:rgba(255,255,255,0.15);transition:color 0.15s;"
+                                    onmouseover="hoverStars(2)" onmouseout="resetStars()" onclick="pickStar(2)">★</span>
+                                <span class="rv-star" data-v="3"
+                                    style="font-size:26px;cursor:pointer;color:rgba(255,255,255,0.15);transition:color 0.15s;"
+                                    onmouseover="hoverStars(3)" onmouseout="resetStars()" onclick="pickStar(3)">★</span>
+                                <span class="rv-star" data-v="4"
+                                    style="font-size:26px;cursor:pointer;color:rgba(255,255,255,0.15);transition:color 0.15s;"
+                                    onmouseover="hoverStars(4)" onmouseout="resetStars()" onclick="pickStar(4)">★</span>
+                                <span class="rv-star" data-v="5"
+                                    style="font-size:26px;cursor:pointer;color:rgba(255,255,255,0.15);transition:color 0.15s;"
+                                    onmouseover="hoverStars(5)" onmouseout="resetStars()" onclick="pickStar(5)">★</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-bottom:18px;">
+                        <label
+                            style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:8px;">Your
+                            Review</label>
+                        <textarea id="rv-comment" rows="3" placeholder="Share your experience…"
+                            style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(201,169,110,0.15);border-radius:10px;padding:11px 14px;color:#fff;font-family:var(--font-body);font-size:13px;outline:none;resize:vertical;transition:border-color 0.2s;"
+                            onfocus="this.style.borderColor='var(--gold)'"
+                            onblur="this.style.borderColor='rgba(201,169,110,0.15)'"></textarea>
+                    </div>
+                    <button onclick="submitReview()" id="rv-btn" class="btn btn-gold" style="min-width:160px;">Post
+                        Review</button>
+                </div>
             </div>
         </section>
     </div>
@@ -192,9 +262,38 @@
             };
 
             window.addToCartDirect = (prod) => { addToCart(prod); openCart(); };
-            window.addToWishlist = () => showToast('Wishlist feature coming soon! ✨');
+
+            // ── Real Wishlist toggle ──────────────────────────────────────────
+            const wl = JSON.parse(localStorage.getItem('aeon_wishlist') || '[]');
+            const isWished = wl.some(x => x.id === p.id);
+            const wishBtn = document.querySelector('.detail-actions .btn-outline');
+            if (wishBtn) {
+                if (isWished) wishBtn.innerHTML = `<i data-lucide="heart" style="width:16px;height:16px;fill:var(--gold);color:var(--gold);"></i>`;
+                wishBtn.onclick = () => {
+                    const list = JSON.parse(localStorage.getItem('aeon_wishlist') || '[]');
+                    const idx = list.findIndex(x => x.id === p.id);
+                    if (idx > -1) {
+                        list.splice(idx, 1);
+                        wishBtn.innerHTML = `<i data-lucide="heart" style="width:16px;height:16px;"></i>`;
+                        showToast('Removed from wishlist');
+                    } else {
+                        list.push({ id: p.id, name: p.name, price: p.price, thumb: imgSrc });
+                        wishBtn.innerHTML = `<i data-lucide="heart" style="width:16px;height:16px;fill:var(--gold);color:var(--gold);"></i>`;
+                        showToast('Added to wishlist ♥');
+                    }
+                    localStorage.setItem('aeon_wishlist', JSON.stringify(list));
+                    if (window.lucide) lucide.createIcons();
+                };
+            }
+
+            // ── OG meta tags ─────────────────────────────────────────────────
+            document.getElementById('og-title')?.setAttribute('content', p.name + ' – AEON Jewellery');
+            document.getElementById('og-desc')?.setAttribute('content', p.description || 'Premium 24K gold-plated jewellery');
+            document.getElementById('og-image')?.setAttribute('content', window.location.origin + imgSrc);
+            document.getElementById('og-url')?.setAttribute('content', window.location.href);
 
             setupReveal();
+            loadReviews(productId);
         }
 
         async function loadRelated(category, excludeId) {
@@ -222,6 +321,72 @@
         document.getElementById('lightbox').addEventListener('click', e => {
             if (e.target === e.currentTarget) closeLightbox();
         });
+
+        // ── Reviews ───────────────────────────────────────────────────────────
+        let _selectedRating = 0;
+
+        function hoverStars(n) {
+            document.querySelectorAll('.rv-star').forEach((s, i) => s.style.color = i < n ? 'var(--gold)' : 'rgba(255,255,255,0.15)');
+        }
+        function resetStars() {
+            document.querySelectorAll('.rv-star').forEach((s, i) => s.style.color = i < _selectedRating ? 'var(--gold)' : 'rgba(255,255,255,0.15)');
+        }
+        function pickStar(n) {
+            _selectedRating = n;
+            resetStars();
+        }
+
+        async function loadReviews(pid) {
+            try {
+                const data = await fetch(`/api/products/${pid}/reviews`).then(r => r.json());
+                const avgEl = document.getElementById('avg-rating-display');
+                if (data.count > 0) {
+                    const stars = '★'.repeat(Math.round(data.avg)) + '☆'.repeat(5 - Math.round(data.avg));
+                    avgEl.innerHTML = `<span style="font-size:24px;color:var(--gold);letter-spacing:2px;">${stars}</span><span style="color:var(--text-muted);font-size:14px;">${data.avg} / 5 &nbsp;&bull;&nbsp; ${data.count} review${data.count > 1 ? 's' : ''}</span>`;
+                } else {
+                    avgEl.innerHTML = `<span style="color:var(--text-muted);font-size:13px;">No reviews yet. Be the first!</span>`;
+                }
+                const list = document.getElementById('reviews-list');
+                list.innerHTML = data.reviews.map(r => {
+                    const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+                    const date = new Date(r.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+                    return `<div style="background:rgba(255,255,255,0.02);border:1px solid rgba(201,169,110,0.08);border-radius:14px;padding:20px 22px;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                            <div>
+                                <span style="font-weight:600;font-size:14px;color:#fff;">${r.reviewer_name}</span>
+                                <span style="color:var(--gold);font-size:15px;margin-left:10px;letter-spacing:1px;">${stars}</span>
+                            </div>
+                            <span style="font-size:11px;color:var(--text-muted);">${date}</span>
+                        </div>
+                        ${r.comment ? `<p style="color:var(--text-muted);font-size:13px;line-height:1.7;margin:0;">${r.comment}</p>` : ''}
+                    </div>`;
+                }).join('');
+            } catch (e) { }
+        }
+
+        async function submitReview() {
+            const name = document.getElementById('rv-name').value.trim();
+            const comment = document.getElementById('rv-comment').value.trim();
+            if (!name) { alert('Please enter your name.'); return; }
+            if (!_selectedRating) { alert('Please select a rating.'); return; }
+            const btn = document.getElementById('rv-btn');
+            btn.disabled = true; btn.textContent = 'Posting…';
+            try {
+                const res = await fetch(`/api/products/${productId}/reviews`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, rating: _selectedRating, comment })
+                });
+                if (res.ok) {
+                    showToast('Thank you for your review! ♥');
+                    document.getElementById('rv-name').value = '';
+                    document.getElementById('rv-comment').value = '';
+                    _selectedRating = 0; resetStars();
+                    loadReviews(productId);
+                } else { alert('Could not post review. Try again.'); }
+            } catch (e) { alert('Network error. Try again.'); }
+            btn.disabled = false; btn.textContent = 'Post Review';
+        }
 
         function setupReveal() {
             const observer = new IntersectionObserver((entries) => {
