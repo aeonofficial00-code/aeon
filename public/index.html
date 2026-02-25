@@ -333,7 +333,7 @@
       try {
         const cats = await fetch('/api/categories').then(r => r.json());
         // Hero image: use static homepage.png (AEON product photo)
-        document.getElementById('hero-side-img').src = '/images/homepage.png';
+        document.getElementById('hero-side-img').src = '/images/hero/homepage.jpeg';
         // About section image: use first category cover if available
         if (cats.length > 0 && cats[0].cover) {
           document.getElementById('about-img').src = cats[0].cover;
