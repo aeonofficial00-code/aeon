@@ -156,12 +156,18 @@ function renderProductCard(p) {
     <div class="product-card reveal" onclick="location.href='product.html?id=${p.id}'">
       <div class="product-img-wrap">
         <img class="product-img" src="${img}" alt="${p.name}" loading="lazy" />
-        ${p.featured ? '<span class="product-badge">Featured</span>' : ''}
+        ${p.stock_status === 'out_of_stock' ? '<span class="product-badge" style="background:#d9534f;color:#fff;">Sold Out</span>' : (p.featured ? '<span class="product-badge">Featured</span>' : '')}
         <div class="product-actions">
+          ${p.stock_status === 'out_of_stock' ? `
+          <button class="btn-cart" style="background:rgba(217,83,79,0.1);color:#d9534f;cursor:not-allowed;" onclick="event.stopPropagation()">
+            Sold Out
+          </button>
+          ` : `
           <button class="btn-cart" onclick="event.stopPropagation(); addToCart(${JSON.stringify({ id: p.id, name: p.name, category: p.category, price: p.price, thumb: img }).replace(/"/g, '&quot;')})">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
             Add to Cart
           </button>
+          `}
         </div>
         <div class="product-glow"></div>
       </div>

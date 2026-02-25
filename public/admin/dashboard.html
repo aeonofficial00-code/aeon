@@ -628,7 +628,6 @@
             <button class="sidebar-link" onclick="showTab('categories')">🗂️ Categories</button>
             <button class="sidebar-link" onclick="showTab('orders')">🛒 Orders</button>
             <button class="sidebar-link" onclick="showTab('users')">👤 Users</button>
-            <button class="sidebar-link" onclick="showTab('stock')">📊 Stock</button>
             <a href="/" class="sidebar-link" style="text-decoration:none;" target="_blank">🌐 View Store</a>
         </nav>
         <div class="sidebar-bottom">
@@ -685,13 +684,14 @@
                                 <th>Name</th>
                                 <th>Category</th>
                                 <th>Price</th>
+                                <th>Stock</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="products-tbody">
                             <tr>
-                                <td colspan="6" style="padding:40px;text-align:center;color:var(--text-muted);">Loading…
+                                <td colspan="7" style="padding:40px;text-align:center;color:var(--text-muted);">Loading…
                                 </td>
                             </tr>
                         </tbody>
@@ -788,33 +788,6 @@
         </div>
     </div>
 
-    <!-- STOCK TAB -->
-    <div id="tab-stock" class="tab-content" style="display:none;">
-        <div class="table-wrap">
-            <div class="table-header">
-                <span style="font-size:14px;letter-spacing:1px;color:var(--gold);">Stock Management</span>
-                <div class="search-box"><input type="text" placeholder="Search product…"
-                        oninput="filterStock(this.value)" /></div>
-            </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Product</th>
-                        <th>Category</th>
-                        <th>Price</th>
-                        <th>Qty in Stock</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="stock-tbody">
-                    <tr>
-                        <td colspan="6" style="padding:40px;text-align:center;color:var(--text-muted);">Loading…</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
 
     <!-- ═══════════════════════ PRODUCT MODAL ══════════════════════ -->
     <div class="modal-overlay" id="product-modal">
@@ -942,74 +915,18 @@
         const _showTab = showTab;
         window.showTab = function (tab) {
             _showTab(tab);
-            const titles = { products: 'Products', categories: 'Categories', users: 'Users', orders: 'Orders', stock: 'Stock Management' };
+            const titles = { products: 'Products', categories: 'Categories', users: 'Users', orders: 'Orders' };
             document.getElementById('tab-title').textContent = titles[tab] || tab;
             const addBtn = document.getElementById('add-btn');
             if (tab === 'products') { addBtn.textContent = '+ Add Product'; addBtn.onclick = openAddProductModal; addBtn.style.display = ''; }
             else if (tab === 'categories') { addBtn.textContent = '+ Add Category'; addBtn.onclick = openAddCatModal; addBtn.style.display = ''; }
             else { addBtn.style.display = 'none'; }
             if (tab === 'orders') loadAdminOrders();
-            if (tab === 'stock') loadStock();
         };
 
         let allOrders = [];
-        let allStockProducts = [];
 
-        // ── STOCK TAB ───────────────────────────────────────────
-        async function loadStock() {
-            const tbody = document.getElementById('stock-tbody');
-            try {
-                const res = await fetch('/api/admin/products', { headers: { 'x-admin-token': getToken() } });
-                allStockProducts = await res.json();
-                renderStockTable(allStockProducts);
-            } catch (e) {
-                tbody.innerHTML = `<tr><td colspan="6" style="padding:40px;text-align:center;color:var(--text-muted);">Failed to load stock data.</td></tr>`;
-            }
-        }
 
-        function renderStockTable(products) {
-            const tbody = document.getElementById('stock-tbody');
-            if (!products.length) { tbody.innerHTML = `<tr><td colspan="6" style="padding:40px;text-align:center;color:var(--text-muted);">No products.</td></tr>`; return; }
-            const statusColors = { in_stock: '#5cb85c', low_stock: '#f0ad4e', out_of_stock: '#d9534f' };
-            const statusLabels = { in_stock: '\u2705 In Stock', low_stock: '\u26a0\ufe0f Low Stock', out_of_stock: '\u274c Sold Out' };
-            tbody.innerHTML = products.map(p => `
-                <tr>
-                    <td><div style="font-weight:500;">${p.name}</div><div style="font-size:11px;color:var(--text-muted);">${p.category}</div></td>
-                    <td style="font-size:12px;color:var(--text-muted);">${p.category}</td>
-                    <td style="color:var(--gold);">\u20b9${parseFloat(p.price).toLocaleString('en-IN')}</td>
-                    <td><input type="number" id="sq-${p.id}" value="${p.stock ?? ''}" min="0" placeholder="\u221e" style="width:80px;background:rgba(255,255,255,0.06);border:1px solid rgba(201,169,110,0.25);border-radius:8px;padding:6px 10px;color:#E8E0D0;font-size:13px;outline:none;" /></td>
-                    <td>
-                        <select id="ss-${p.id}" style="background:rgba(${p.stock_status === 'in_stock' ? '92,184,92' : p.stock_status === 'low_stock' ? '240,173,78' : '217,83,79'},0.1);border:1px solid rgba(${p.stock_status === 'in_stock' ? '92,184,92' : p.stock_status === 'low_stock' ? '240,173,78' : '217,83,79'},0.3);color:${statusColors[p.stock_status] || '#888'};border-radius:8px;padding:5px 10px;font-size:12px;outline:none;cursor:pointer;">
-                            <option value="in_stock" ${p.stock_status === 'in_stock' ? 'selected' : ''}>\u2705 In Stock</option>
-                            <option value="low_stock" ${p.stock_status === 'low_stock' ? 'selected' : ''}>\u26a0\ufe0f Low Stock</option>
-                            <option value="out_of_stock" ${p.stock_status === 'out_of_stock' ? 'selected' : ''}>\u274c Sold Out</option>
-                        </select>
-                    </td>
-                    <td><button onclick="saveStock('${p.id}')" class="btn btn-outline" style="font-size:11px;padding:6px 14px;">Save</button></td>
-                </tr>`);
-        }
-
-        function filterStock(q) {
-            const filtered = allStockProducts.filter(p =>
-                p.name.toLowerCase().includes(q.toLowerCase()) ||
-                p.category.toLowerCase().includes(q.toLowerCase()));
-            renderStockTable(filtered);
-        }
-
-        async function saveStock(productId) {
-            const stock = document.getElementById('sq-' + productId).value;
-            const stock_status = document.getElementById('ss-' + productId).value;
-            const res = await fetch(`/api/admin/products/${productId}/stock`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json', 'x-admin-token': getToken() },
-                body: JSON.stringify({ stock, stock_status })
-            });
-            if (res.ok) {
-                const btn = document.querySelector(`button[onclick="saveStock('${productId}')"]`);
-                if (btn) { const orig = btn.textContent; btn.textContent = '\u2713 Saved'; btn.style.color = '#5cb85c'; setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 1500); }
-                loadStock();
-            } else { alert('Failed to save stock.'); }
-        }
 
         async function loadAdminOrders() {
             const tbody = document.getElementById('orders-tbody');

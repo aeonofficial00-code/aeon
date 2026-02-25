@@ -93,13 +93,16 @@ async function loadProducts() {
 
 function renderProductsTable(products) {
     const tbody = document.getElementById('products-tbody');
-    if (!products.length) { tbody.innerHTML = `<tr><td colspan="6" style="padding:50px;text-align:center;color:var(--text-muted)">No products found.</td></tr>`; return; }
+    if (!products.length) { tbody.innerHTML = `<tr><td colspan="7" style="padding:50px;text-align:center;color:var(--text-muted)">No products found.</td></tr>`; return; }
+    const stColors = { in_stock: '#5cb85c', low_stock: '#f0ad4e', out_of_stock: '#d9534f' };
+    const stLabels = { in_stock: 'In Stock', low_stock: 'Low Stock', out_of_stock: 'Sold Out' };
     tbody.innerHTML = products.map(p => `
     <tr>
       <td><img class="td-img" src="" data-pid="${p.id}" alt="${p.name}" style="width:48px;height:48px;object-fit:cover;border-radius:8px;background:#222;" /></td>
       <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.name}</td>
       <td><span style="font-size:12px;color:var(--gold);">${p.category}</span></td>
       <td style="font-weight:500;color:var(--gold);">₹${parseFloat(p.price).toLocaleString('en-IN')}</td>
+      <td><div style="font-size:12px;color:${stColors[p.stock_status] || '#fff'};">${p.stock !== null ? p.stock + ' qty' : '\u221e'}</div><div style="font-size:10px;color:var(--text-muted);">${stLabels[p.stock_status] || ''}</div></td>
       <td><span class="td-badge ${p.featured ? 'badge-featured' : 'badge-normal'}">${p.featured ? 'Featured' : 'Standard'}</span></td>
       <td>
         <div class="td-actions">

@@ -231,12 +231,22 @@
       <p class="detail-category">${p.category}</p>
       <h1 class="detail-name">${p.name}</h1>
       <div class="detail-price">₹${parseFloat(p.price).toLocaleString('en-IN')} <span>incl. taxes</span></div>
+      <div style="margin-top:12px;font-size:13px;color:${p.stock_status === 'out_of_stock' ? '#d9534f' : 'var(--gold)'};font-weight:600;letter-spacing:0.5px;display:flex;align-items:center;gap:6px;">
+        <div style="width:6px;height:6px;border-radius:50%;background:currentColor;"></div>
+        Availability: ${p.stock_status === 'out_of_stock' ? 'Sold Out' : (p.stock !== null ? p.stock + ' in stock' : 'In Stock')}
+      </div>
       <div class="divider-h"></div>
       <p class="detail-desc">${p.description || ''}</p>
       <div class="detail-actions">
-        <button class="btn btn-gold" onclick='addToCartDirect(${JSON.stringify({ id: p.id, name: p.name, category: p.category, price: p.price, thumb: imgSrc })})'>
-          <i data-lucide="shopping-bag" style="width:16px;height:16px;"></i> Add to Cart
-        </button>
+        ${p.stock_status === 'out_of_stock' ? `
+          <button class="btn btn-gold" style="background:#444;border-color:#444;cursor:not-allowed;" disabled>
+            Sold Out
+          </button>
+        ` : `
+          <button class="btn btn-gold" onclick='addToCartDirect(${JSON.stringify({ id: p.id, name: p.name, category: p.category, price: p.price, thumb: imgSrc }).replace(/"/g, '&quot;')})'>
+            <i data-lucide="shopping-bag" style="width:16px;height:16px;"></i> Add to Cart
+          </button>
+        `}
         <button class="btn btn-outline" id="wish-btn">
           <i data-lucide="heart" style="width:16px;height:16px;"></i>
         </button>
