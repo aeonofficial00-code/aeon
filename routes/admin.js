@@ -139,7 +139,7 @@ router.delete('/categories/:id', auth, async (req, res) => {
 // ── GET /api/admin/products ───────────────────────────────────────────────────
 router.get('/products', auth, async (req, res) => {
     try {
-        const { rows } = await pool.query(`SELECT id, name, category, price, description, featured, created_at FROM products ORDER BY created_at DESC`);
+        const { rows } = await pool.query(`SELECT id, name, category, price, description, featured, stock, stock_status, created_at FROM products ORDER BY created_at DESC`);
         res.json(rows);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -157,14 +157,16 @@ router.get('/products/:id/images', auth, async (req, res) => {
 // ── POST /api/admin/products – base64 JSON body ───────────────────────────────
 router.post('/products', auth, express.json({ limit: '50mb' }), async (req, res) => {
     try {
-        const { name, category, price, description, featured, images } = req.body;
+        const { name, category, price, description, featured, images, stock, stock_status } = req.body;
         if (!name || !category) return res.status(400).json({ error: 'Name and category are required' });
         const { rows } = await pool.query(
-            `INSERT INTO products (name, category, price, description, images, featured)
-       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-            [name, category, parseFloat(price) || 0, description || '', JSON.stringify(images || []), featured === true || featured === 'true']
+            `INSERT INTO products (name, category, price, description, images, featured, stock, stock_status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+            [name, category, parseFloat(price) || 0, description || '', JSON.stringify(images || []),
+                featured === true || featured === 'true',
+                stock !== undefined && stock !== '' ? parseInt(stock) : null,
+                stock_status || 'in_stock']
         );
-        // Ensure category entry exists
         await pool.query(`INSERT INTO categories (name) VALUES ($1) ON CONFLICT (name) DO NOTHING`, [category]);
         res.json(rows[0]);
     } catch (err) { res.status(500).json({ error: err.message }); }
@@ -173,19 +175,24 @@ router.post('/products', auth, express.json({ limit: '50mb' }), async (req, res)
 // ── PUT /api/admin/products/:id ───────────────────────────────────────────────
 router.put('/products/:id', auth, express.json({ limit: '50mb' }), async (req, res) => {
     try {
-        const { name, category, price, description, featured, images } = req.body;
+        const { name, category, price, description, featured, images, stock, stock_status } = req.body;
+        const stockVal = (stock !== undefined && stock !== '') ? parseInt(stock) : null;
         const { rows } = await pool.query(
             `UPDATE products SET
-        name = COALESCE($1, name),
-        category = COALESCE($2, category),
-        price = COALESCE($3, price),
+        name        = COALESCE($1, name),
+        category    = COALESCE($2, category),
+        price       = COALESCE($3, price),
         description = COALESCE($4, description),
-        images = COALESCE($5::jsonb, images),
-        featured = COALESCE($6, featured),
-        updated_at = NOW()
-       WHERE id = $7 RETURNING *`,
+        images      = COALESCE($5::jsonb, images),
+        featured    = COALESCE($6, featured),
+        stock       = $7,
+        stock_status = COALESCE($8, stock_status),
+        updated_at  = NOW()
+       WHERE id = $9 RETURNING *`,
             [name || null, category || null, price ? parseFloat(price) : null, description || null,
-            images ? JSON.stringify(images) : null, featured !== undefined ? (featured === true || featured === 'true') : null,
+            images ? JSON.stringify(images) : null,
+            featured !== undefined ? (featured === true || featured === 'true') : null,
+                stockVal, stock_status || null,
             req.params.id]
         );
         if (!rows.length) return res.status(404).json({ error: 'Not found' });
@@ -193,7 +200,21 @@ router.put('/products/:id', auth, express.json({ limit: '50mb' }), async (req, r
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ── DELETE /api/admin/products/:id ────────────────────────────────────────────
+// ── PATCH /api/admin/products/:id/stock – quick stock update ──────────────────
+router.patch('/products/:id/stock', auth, express.json(), async (req, res) => {
+    try {
+        const { stock, stock_status } = req.body;
+        const stockVal = (stock !== undefined && stock !== '') ? parseInt(stock) : null;
+        const allowed = ['in_stock', 'low_stock', 'out_of_stock'];
+        const status = allowed.includes(stock_status) ? stock_status : 'in_stock';
+        const { rows } = await pool.query(
+            `UPDATE products SET stock=$1, stock_status=$2, updated_at=NOW() WHERE id=$3 RETURNING id, name, stock, stock_status`,
+            [stockVal, status, req.params.id]
+        );
+        if (!rows.length) return res.status(404).json({ error: 'Not found' });
+        res.json(rows[0]);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
 router.delete('/products/:id', auth, async (req, res) => {
     try {
         const result = await pool.query(`DELETE FROM products WHERE id=$1`, [req.params.id]);

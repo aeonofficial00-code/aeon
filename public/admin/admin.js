@@ -149,6 +149,8 @@ async function openEditProductModal(id) {
     document.getElementById('p-name').value = p.name;
     document.getElementById('p-price').value = p.price;
     document.getElementById('p-description').value = p.description || '';
+    document.getElementById('p-stock').value = p.stock ?? '';
+    document.getElementById('p-stock-status').value = p.stock_status || 'in_stock';
     isFeatured = p.featured || false; updateToggle();
     populateCategorySelect(p.category);
     renderImagePreviews();
@@ -204,7 +206,12 @@ async function submitProduct() {
     const btn = document.getElementById('submit-btn');
     btn.disabled = true; btn.textContent = 'Saving…';
     try {
-        const body = { name, category, price: parseFloat(price), description, featured, images: productImages };
+        const stock = document.getElementById('p-stock').value;
+        const stock_status = document.getElementById('p-stock-status').value;
+        const body = {
+            name, category, price: parseFloat(price), description, featured, images: productImages,
+            stock: stock !== '' ? parseInt(stock) : null, stock_status
+        };
         const editId = document.getElementById('edit-id').value;
         const res = editMode && editId
             ? await apiFetch(`/api/admin/products/${editId}`, { method: 'PUT', body: JSON.stringify(body) })
