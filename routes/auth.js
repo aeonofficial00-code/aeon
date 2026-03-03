@@ -33,6 +33,11 @@ router.get('/google/callback',
             }
         }
 
+        // Checkout redirect – send user back to checkout after login
+        if (redirect === 'checkout') {
+            return res.redirect('/checkout');
+        }
+
         // Regular user – go to home
         res.redirect('/');
     }

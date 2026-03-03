@@ -470,7 +470,14 @@
         let cartItems = [];
         let _appliedCoupon = null;
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Auth guard – redirect to login if not signed in, then come back here
+            const { user } = await fetch('/auth/me').then(r => r.json()).catch(() => ({ user: null }));
+            if (!user) {
+                window.location.href = '/login?redirect=checkout';
+                return;
+            }
+
             cartItems = loadCart();
             if (!cartItems.length) {
                 document.getElementById('checkout-grid').style.display = 'none';

@@ -304,7 +304,7 @@
                 style="text-align:center;color:rgba(255,255,255,0.45);font-size:13px;line-height:1.7;margin-bottom:28px;">
                 Sign in to save your wishlist, track orders, and enjoy a personalised shopping experience.
             </p>
-            <a href="/auth/google?redirect=home" class="google-btn">
+            <a id="google-signin-btn" href="/auth/google?redirect=home" class="google-btn">
                 <!-- Google logo SVG -->
                 <svg class="google-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -343,6 +343,10 @@
                 ? 'Authentication failed. Please try again.'
                 : 'An error occurred. Please try again.';
         }
+
+        // Set redirect param on Google sign-in link
+        const redirectTarget = params.get('redirect') || 'home';
+        document.getElementById('google-signin-btn').href = `/auth/google?redirect=${encodeURIComponent(redirectTarget)}`;
 
         // Check if already logged in
         fetch('/auth/me').then(r => r.json()).then(({ user }) => {
