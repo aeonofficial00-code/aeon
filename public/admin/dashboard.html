@@ -985,8 +985,18 @@
                         <div style="font-size:11px;color:var(--text-muted);">${addr.phone || ''}</div>
                     </td>
                     <td>
-                        <div style="display:flex;gap:4px;flex-wrap:wrap;">${items.slice(0, 3).map(i => `<img src="${i.thumb || ''}" title="${i.name}" style="width:36px;height:36px;border-radius:6px;object-fit:cover;border:1px solid rgba(201,169,110,0.15);background:#1a1a1a;" onerror="this.style.display='none'"/>`).join('')}</div>
-                        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${items.length} item${items.length !== 1 ? 's' : ''}</div>
+                        <div style="display:flex;flex-direction:column;gap:8px;max-width:260px;">
+                            ${items.slice(0, 3).map(i => `
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <img src="${i.thumb || ''}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;border:1px solid rgba(201,169,110,0.15);background:#1a1a1a;flex-shrink:0;" onerror="this.style.display='none'"/>
+                                <div style="min-width:0;">
+                                    <div style="font-size:12px;color:var(--text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;">${i.name}</div>
+                                    <div style="font-size:10px;color:var(--text-muted);margin-top:1px;">${i.category || ''}${i.selectedSize ? ` · <span style="color:var(--gold);">Size: ${i.selectedSize}</span>` : ''} · Qty: ${i.qty || 1}</div>
+                                    <div style="font-size:11px;color:var(--gold);">₹${(parseFloat(i.price) * (i.qty || 1)).toLocaleString('en-IN')}</div>
+                                </div>
+                            </div>`).join('')}
+                            ${items.length > 3 ? `<div style="font-size:11px;color:var(--text-muted);padding-left:48px;">+${items.length - 3} more item${items.length - 3 > 1 ? 's' : ''}</div>` : ''}
+                        </div>
                     </td>
                     <td style="font-size:12px;color:var(--text-muted);max-width:160px;">
                         ${addr.line1 || '—'}<br/>
