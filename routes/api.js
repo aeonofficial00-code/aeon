@@ -24,7 +24,11 @@ router.get('/categories', async (req, res) => {
         c.name,
         c.description,
         c.parent_id,
-        (SELECT COUNT(*) FROM products p WHERE LOWER(p.category) = LOWER(c.name)) AS count,
+        (SELECT COUNT(*) FROM products p
+               WHERE LOWER(p.category) = LOWER(c.name)
+                  OR LOWER(p.category) IN (
+                       SELECT LOWER(sc.name) FROM categories sc WHERE sc.parent_id = c.id
+                  )) AS count,
         CASE WHEN c.cover_data IS NOT NULL THEN '/api/categories/' || c.id || '/cover' ELSE NULL END AS cover
       FROM categories c
       ORDER BY c.parent_id NULLS FIRST, c.name
