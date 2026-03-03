@@ -78,7 +78,7 @@ router.get('/products', async (req, res) => {
         const { category } = req.query;
         const cat = category ? decodeURIComponent(category) : null;
         const { rows } = await pool.query(
-            `SELECT p.id, p.name, p.category, p.price, p.description, p.featured, p.is_on_sale, p.sale_price, p.stock, p.stock_status, p.created_at,
+            `SELECT p.id, p.name, p.category, p.price, p.description, p.featured, p.is_on_sale, p.sale_price, p.stock, p.stock_status, p.available_sizes, p.created_at,
               '/api/products/' || p.id || '/thumb' AS thumb
        FROM products p
        LEFT JOIN categories c ON TRIM(LOWER(p.category)) = TRIM(LOWER(c.name))

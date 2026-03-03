@@ -68,8 +68,7 @@ router.post('/logout', auth, (req, res) => {
 // ── GET /api/admin/categories ─────────────────────────────────────────────────
 router.get('/categories', auth, async (req, res) => {
     try {
-        const { rows } = await pool.query(`SELECT id, name, description, cover_name, created_at FROM categories ORDER BY name`);
-        // Return cover data URLs separately for listing (don't send base64 in list view)
+        const { rows } = await pool.query(`SELECT id, name, description, cover_name, parent_id, created_at FROM categories ORDER BY parent_id NULLS FIRST, name`);
         res.json(rows);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -106,12 +105,14 @@ router.post('/categories', auth, express.json({ limit: '25mb' }), async (req, re
 // ── PUT /api/admin/categories/:id ────────────────────────────────────────────
 router.put('/categories/:id', auth, express.json({ limit: '25mb' }), async (req, res) => {
     try {
-        const { name, description, cover_data, cover_name } = req.body;
+        const { name, description, cover_data, cover_name, parent_id } = req.body;
         const updates = [];
         const vals = [];
         if (name) { updates.push(`name=$${vals.push(name)}`); }
         if (description !== undefined) { updates.push(`description=$${vals.push(description)}`); }
         if (cover_data) { updates.push(`cover_data=$${vals.push(cover_data)}`); updates.push(`cover_name=$${vals.push(cover_name || '')}`); }
+        // Always update parent_id (allow setting to null for top-level)
+        updates.push(`parent_id=$${vals.push(parent_id || null)}`);
         if (!updates.length) return res.status(400).json({ error: 'Nothing to update' });
         vals.push(req.params.id);
         const { rows } = await pool.query(
@@ -139,7 +140,7 @@ router.delete('/categories/:id', auth, async (req, res) => {
 // ── GET /api/admin/products ───────────────────────────────────────────────────
 router.get('/products', auth, async (req, res) => {
     try {
-        const { rows } = await pool.query(`SELECT id, name, category, price, description, featured, stock, stock_status, is_on_sale, sale_price, created_at FROM products ORDER BY created_at DESC`);
+        const { rows } = await pool.query(`SELECT id, name, category, price, description, featured, stock, stock_status, is_on_sale, sale_price, available_sizes, created_at FROM products ORDER BY created_at DESC`);
         res.json(rows);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -157,22 +158,24 @@ router.get('/products/:id/images', auth, async (req, res) => {
 // ── POST /api/admin/products – base64 JSON body ───────────────────────────────
 router.post('/products', auth, express.json({ limit: '50mb' }), async (req, res) => {
     try {
-        const { name, category, price, description, featured, images, stock, stock_status, is_on_sale, sale_price } = req.body;
+        const { name, category, price, description, featured, images, stock, stock_status, is_on_sale, sale_price, available_sizes } = req.body;
         if (!name || !category) return res.status(400).json({ error: 'Name and category are required' });
         const stockVal = stock !== undefined && stock !== '' ? parseInt(stock) : null;
         let finalStatus = stock_status || 'in_stock';
         if (stockVal === 0) finalStatus = 'out_of_stock';
         else if (stockVal > 0 && finalStatus === 'out_of_stock') finalStatus = 'in_stock';
 
+        const sizesArr = Array.isArray(available_sizes) && available_sizes.length ? available_sizes : null;
         const { rows } = await pool.query(
-            `INSERT INTO products (name, category, price, description, images, featured, stock, stock_status, is_on_sale, sale_price)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+            `INSERT INTO products (name, category, price, description, images, featured, stock, stock_status, is_on_sale, sale_price, available_sizes)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
             [name, category, parseFloat(price) || 0, description || '', JSON.stringify(images || []),
                 featured === true || featured === 'true',
                 stockVal,
                 finalStatus,
                 is_on_sale === true || is_on_sale === 'true',
-                sale_price !== undefined && sale_price !== '' ? parseFloat(sale_price) : null]
+                sale_price !== undefined && sale_price !== '' ? parseFloat(sale_price) : null,
+                sizesArr]
         );
         await pool.query(`INSERT INTO categories (name) VALUES ($1) ON CONFLICT (name) DO NOTHING`, [category]);
         res.json(rows[0]);
@@ -182,9 +185,10 @@ router.post('/products', auth, express.json({ limit: '50mb' }), async (req, res)
 // ── PUT /api/admin/products/:id ───────────────────────────────────────────────
 router.put('/products/:id', auth, express.json({ limit: '50mb' }), async (req, res) => {
     try {
-        const { name, category, price, description, featured, images, stock, stock_status, is_on_sale, sale_price } = req.body;
+        const { name, category, price, description, featured, images, stock, stock_status, is_on_sale, sale_price, available_sizes } = req.body;
         const stockVal = (stock !== undefined && stock !== '') ? parseInt(stock) : null;
         const salePriceVal = (sale_price !== undefined && sale_price !== '') ? parseFloat(sale_price) : null;
+        const sizesArr = Array.isArray(available_sizes) ? available_sizes : null;
         let finalStatus = stock_status || null;
         if (stockVal === 0) finalStatus = 'out_of_stock';
         else if (stockVal > 0 && finalStatus === 'out_of_stock') finalStatus = 'in_stock';
@@ -201,14 +205,16 @@ router.put('/products/:id', auth, express.json({ limit: '50mb' }), async (req, r
         stock_status = COALESCE($8, stock_status),
         is_on_sale  = $9,
         sale_price  = $10,
+        available_sizes = COALESCE($11, available_sizes),
         updated_at  = NOW()
-       WHERE id = $11 RETURNING *`,
+       WHERE id = $12 RETURNING *`,
             [name || null, category || null, price ? parseFloat(price) : null, description || null,
             images ? JSON.stringify(images) : null,
             featured !== undefined ? (featured === true || featured === 'true') : null,
                 stockVal, finalStatus,
             is_on_sale !== undefined ? (is_on_sale === true || is_on_sale === 'true') : false,
                 salePriceVal,
+                sizesArr,
             req.params.id]
         );
         if (!rows.length) return res.status(404).json({ error: 'Not found' });

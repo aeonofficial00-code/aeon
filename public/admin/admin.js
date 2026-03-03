@@ -173,6 +173,9 @@ async function openEditProductModal(id) {
     isSaleOn = p.is_on_sale || false; updateSaleToggle();
     isFeatured = p.featured || false; updateToggle();
     populateCategorySelect(p.category);
+    // Load sizes
+    currentSizes = Array.isArray(p.available_sizes) ? [...p.available_sizes] : [];
+    renderSizeChips();
     renderImagePreviews();
     document.getElementById('product-modal').classList.add('open');
 }
@@ -183,7 +186,11 @@ function populateCategorySelect(selected = '') {
         allCategories.map(c => `<option value="${c.name}" ${c.name === selected ? 'selected' : ''}>${c.name}</option>`).join('');
 }
 
-function closeProductModal() { document.getElementById('product-modal').classList.remove('open'); }
+function closeProductModal() {
+    document.getElementById('product-modal').classList.remove('open');
+    currentSizes = [];
+    renderSizeChips();
+}
 
 function toggleFeatured() { isFeatured = !isFeatured; updateToggle(); }
 function updateToggle() {
@@ -201,6 +208,31 @@ function updateSaleToggle() {
     if (isSaleOn) { t.classList.add('on'); l.textContent = 'On Sale 🔥'; l.style.color = '#e07070'; }
     else { t.classList.remove('on'); l.textContent = 'Not on sale'; l.style.color = ''; }
 }
+
+// ── SIZE PICKER ───────────────────────────────
+let currentSizes = [];
+function renderSizeChips() {
+    const el = document.getElementById('size-chips');
+    if (!el) return;
+    el.innerHTML = currentSizes.map((s, i) =>
+        `<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(201,169,110,0.12);border:1px solid rgba(201,169,110,0.3);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--gold);">
+            ${s}
+            <span onclick="currentSizes.splice(${i},1);renderSizeChips();" style="cursor:pointer;opacity:0.6;font-size:11px;">✕</span>
+         </span>`
+    ).join('');
+}
+function addSizeFromInput() {
+    const inp = document.getElementById('size-input');
+    const val = (inp?.value || '').trim();
+    if (!val) return;
+    if (!currentSizes.includes(val)) { currentSizes.push(val); renderSizeChips(); }
+    inp.value = '';
+}
+function addSizePreset(sizes) {
+    sizes.forEach(s => { if (!currentSizes.includes(s)) currentSizes.push(s); });
+    renderSizeChips();
+}
+function clearSizes() { currentSizes = []; renderSizeChips(); }
 
 // Image upload → base64
 function handleImageFiles(files) {
@@ -242,7 +274,8 @@ async function submitProduct() {
             name, category, price: parseFloat(price), description, featured, images: productImages,
             stock: stock !== '' ? parseInt(stock) : null, stock_status,
             is_on_sale: isSaleOn,
-            sale_price: sale_price_val !== '' ? parseFloat(sale_price_val) : null
+            sale_price: sale_price_val !== '' ? parseFloat(sale_price_val) : null,
+            available_sizes: currentSizes.length ? currentSizes : null
         };
         const editId = document.getElementById('edit-id').value;
         const res = editMode && editId

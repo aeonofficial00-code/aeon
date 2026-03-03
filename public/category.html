@@ -203,49 +203,66 @@
             document.title = `${catName || 'Collection'} – AEON Jewellery`;
             document.getElementById('page-title').textContent = catName || 'All Collections';
             document.getElementById('breadcrumb-cat').textContent = catName || 'Collections';
-            // Dynamic meta + OG
             document.getElementById('meta-desc')?.setAttribute('content', `Browse AEON's ${catName} collection. Premium 24K gold-plated jewellery.`);
             document.getElementById('og-title')?.setAttribute('content', `${catName} – AEON Jewellery`);
             document.getElementById('og-desc')?.setAttribute('content', `Shop our ${catName} collection. Handcrafted gold-plated pieces.`);
 
-            const [products, allCats] = await Promise.all([
-                fetch(`/api/products?category=${encodeURIComponent(catName)}`).then(r => r.json()).catch(() => []),
-                fetch('/api/categories').then(r => r.json()).catch(() => [])
+            const [allCats, subs] = await Promise.all([
+                fetch('/api/categories').then(r => r.json()).catch(() => []),
+                fetch(`/api/subcategories?parent=${encodeURIComponent(catName)}`).then(r => r.json()).catch(() => [])
             ]);
 
-            allProducts = products;
-
-            // Load subcategory chips
-            const subs = await fetch(`/api/subcategories?parent=${encodeURIComponent(catName)}`).then(r => r.json()).catch(() => []);
-            const chipsEl = document.getElementById('subcategory-chips');
+            // ── PARENT COLLECTION: has subcategories ─────────────────────────────
             if (subs.length) {
-                chipsEl.style.display = 'flex';
-                chipsEl.innerHTML =
-                    '<span style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-right:4px;">Filter:</span>' +
-                    '<button class="subcat-chip active" onclick="filterBySubcat(null, this)">All</button>' +
-                    subs.map(s =>
-                        `<button class="subcat-chip" onclick="filterBySubcat('${s.name.replace(/'/g, "\\'")}', this)">${s.name} <span style="opacity:0.5;font-size:10px;">(${s.count})</span></button>`
-                    ).join('');
+                // Hide product section, show subcategory collection cards instead
+                document.getElementById('subcategory-chips').style.display = 'none';
+                document.querySelector('.filter-bar')?.style && (document.querySelector('.filter-bar').style.display = 'none');
+                document.getElementById('sort-select').closest('.filter-bar').style.display = 'none';
+
+                const grid = document.getElementById('products-grid');
+                document.getElementById('product-count').textContent = `${subs.length} sub-collection${subs.length !== 1 ? 's' : ''}`;
+
+                // Render subcategories as collection cards
+                grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(280px, 1fr))';
+                grid.innerHTML = subs.map(s => `
+                  <div class="category-card reveal" onclick="location.href='category.html?c=${encodeURIComponent(s.name)}'" style="cursor:pointer;">
+                    <img class="card-img" src="${s.cover || ''}" alt="${s.name}" loading="lazy" onerror="this.style.display='none'"/>
+                    <div class="card-overlay"></div><div class="card-border"></div>
+                    <div class="card-content">
+                      <p class="card-count">${s.count} piece${s.count !== 1 ? 's' : ''}</p>
+                      <h3 class="card-name">${s.name}</h3>
+                      <span class="card-arrow">Explore →</span>
+                    </div>
+                  </div>`).join('');
+
+                // Set header bg from first sub cover
+                if (subs[0]?.cover) {
+                    document.getElementById('header-bg-img').style.backgroundImage = `url('${subs[0].cover}')`;
+                }
+                document.getElementById('page-subtitle').textContent = `${subs.length} curated sub-collection${subs.length !== 1 ? 's' : ''} in this range`;
+
             } else {
+                // ── LEAF COLLECTION: no subcategories, show products ─────────────
+                const products = await fetch(`/api/products?category=${encodeURIComponent(catName)}`).then(r => r.json()).catch(() => []);
+                allProducts = products;
+
+                const chipsEl = document.getElementById('subcategory-chips');
                 chipsEl.style.display = 'none';
+
+                const firstThumb = products.length ? (products[0].thumb || '') : '';
+                if (firstThumb) {
+                    document.getElementById('header-bg-img').style.backgroundImage = `url('${firstThumb}')`;
+                    document.getElementById('page-subtitle').textContent = `${products.length} handpicked piece${products.length !== 1 ? 's' : ''} in this collection`;
+                }
+
+                document.getElementById('sort-select').addEventListener('change', e => {
+                    renderProducts(sortProducts([...allProducts], e.target.value));
+                });
+
+                renderProducts(products);
             }
 
-            // Set header bg using thumb URL
-            const firstThumb = products.length ? (products[0].thumb || '') : '';
-            if (firstThumb) {
-                const bg = document.getElementById('header-bg-img');
-                bg.style.backgroundImage = `url('${firstThumb}')`;
-                document.getElementById('page-subtitle').textContent = `${products.length} handpicked piece${products.length !== 1 ? 's' : ''} in this collection`;
-            }
-
-            // Sort
-            document.getElementById('sort-select').addEventListener('change', e => {
-                renderProducts(sortProducts([...allProducts], e.target.value));
-            });
-
-            renderProducts(products);
-
-            // Other categories (top-level only)
+            // Other top-level categories section
             const others = allCats.filter(c => c.name !== catName && !c.parent_id).slice(0, 6);
             const otherGrid = document.getElementById('other-cats');
             otherGrid.innerHTML = others.map(cat => `
@@ -270,14 +287,12 @@
             if (!subcatName || activeSubcat === subcatName) {
                 activeSubcat = null;
                 renderProducts(allProducts);
-                // The "All" button is the first subcat-chip
                 if (!subcatName && btnEl) btnEl.classList.add('active');
                 else document.querySelector('.subcat-chip').classList.add('active');
                 return;
             }
             activeSubcat = subcatName;
             if (btnEl) btnEl.classList.add('active');
-
             const filtered = allProducts.filter(p => p.category.trim().toLowerCase() === subcatName.trim().toLowerCase());
             renderProducts(filtered);
         }
