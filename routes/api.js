@@ -50,7 +50,9 @@ router.get('/subcategories', async (req, res) => {
         const { parent } = req.query;
         if (!parent) return res.json([]);
         const { rows } = await pool.query(
-            `SELECT c.id, c.name, (SELECT COUNT(*) FROM products p WHERE LOWER(p.category) = LOWER(c.name)) AS count
+            `SELECT c.id, c.name,
+                    (SELECT COUNT(*) FROM products p WHERE LOWER(p.category) = LOWER(c.name)) AS count,
+                    CASE WHEN c.cover_data IS NOT NULL THEN '/api/categories/' || c.id || '/cover' ELSE NULL END AS cover
              FROM categories c
              JOIN categories p ON c.parent_id = p.id
              WHERE LOWER(p.name) = LOWER($1)
