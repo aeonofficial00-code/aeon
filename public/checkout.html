@@ -425,6 +425,10 @@
                     <div class="price-row"><span>Delivery</span><span id="sum-delivery">₹99</span></div>
                     <div id="free-delivery-note" class="free-delivery" style="margin-bottom:8px;display:none;">🎉 Free
                         delivery on this order!</div>
+                    <div class="price-row" id="box-row" style="display:none;">
+                        <span id="box-row-label">Box</span>
+                        <span id="sum-box" style="color:var(--gold);">+₹0</span>
+                    </div>
                     <!-- Coupon input -->
                     <div style="display:flex;gap:8px;margin:14px 0 8px;">
                         <input id="coupon-input" type="text" placeholder="Coupon code" autocomplete="off"
@@ -469,6 +473,7 @@
         const DELIVERY_THRESHOLD = 999, DELIVERY_CHARGE = 99;
         let cartItems = [];
         let _appliedCoupon = null;
+        let _boxChoice = null;
 
         document.addEventListener('DOMContentLoaded', async () => {
             // Auth guard – redirect to login if not signed in, then come back here
@@ -484,6 +489,10 @@
                 document.getElementById('empty-cart').style.display = 'block';
                 return;
             }
+
+            // Read box choice from cart
+            _boxChoice = JSON.parse(localStorage.getItem('aeon_box_choice') || 'null');
+
             renderSummary();
             prefillUser();
             loadUserState();
@@ -495,42 +504,45 @@
 
         function renderSummary() {
             const container = document.getElementById('summary-items');
-            container.innerHTML = cartItems.map(item => {
-                const basePrice = parseFloat(item.price);
-                const packPrice = item.packaging ? (item.packaging.price || 0) : 0;
-                const linePrice = (basePrice + packPrice) * (item.qty || 1);
-
-                return `
+            container.innerHTML = cartItems.map(item => `
         <div class="order-item">
           <img src="${item.thumb || ''}" alt="${item.name}" onerror="this.style.display='none'"/>
           <div class="order-item-info">
             <div class="order-item-name">${item.name}</div>
             <div class="order-item-cat">${item.category}</div>
             ${item.selectedSize ? `<div style="font-size:10px;color:var(--gold);letter-spacing:1px;text-transform:uppercase;margin-top:2px;">Size: ${item.selectedSize}</div>` : ''}
-            ${item.packaging && item.packaging.price > 0 ? `<div style="font-size:10px;color:var(--gold-light);margin-top:2px;">+ ${item.packaging.name}</div>` : ''}
-            ${item.packaging && item.packaging.price === 0 ? `<div style="font-size:10px;color:var(--text-muted);margin-top:2px;">+ ${item.packaging.name}</div>` : ''}
             <span class="order-item-qty">Qty: ${item.qty || 1}</span>
           </div>
-          <div class="order-item-price">₹${linePrice.toLocaleString('en-IN')}</div>
+          <div class="order-item-price">₹${(parseFloat(item.price) * (item.qty || 1)).toLocaleString('en-IN')}</div>
         </div>
-        `;
-            }).join('');
+      `).join('');
             recalcSummary();
         }
 
         function recalcSummary() {
-            const subtotal = cartItems.reduce((s, i) => {
-                const p = parseFloat(i.price) + (i.packaging ? (i.packaging.price || 0) : 0);
-                return s + p * (i.qty || 1);
-            }, 0);
+            const subtotal = cartItems.reduce((s, i) => s + parseFloat(i.price) * (i.qty || 1), 0);
             const delivery = subtotal >= DELIVERY_THRESHOLD ? 0 : DELIVERY_CHARGE;
             const discount = _appliedCoupon ? _appliedCoupon.discount : 0;
-            const total = Math.max(0, subtotal + delivery - discount);
+            const allBangles = cartItems.every(i => (i.category || '').toLowerCase().includes('bangle'));
+            const boxPrice = (!allBangles && _boxChoice) ? (_boxChoice.price || 0) : 0;
+            const total = Math.max(0, subtotal + delivery + boxPrice - discount);
 
             document.getElementById('sum-subtotal').textContent = '₹' + subtotal.toLocaleString('en-IN');
             document.getElementById('sum-delivery').textContent = delivery === 0 ? 'FREE' : '₹' + delivery;
             document.getElementById('sum-total').textContent = '₹' + total.toLocaleString('en-IN');
             document.getElementById('free-delivery-note').style.display = delivery === 0 ? 'block' : 'none';
+
+            // Box row
+            const boxRow = document.getElementById('box-row');
+            if (!allBangles && _boxChoice) {
+                boxRow.style.display = 'flex';
+                document.getElementById('box-row-label').textContent = _boxChoice.label || 'Box';
+                document.getElementById('sum-box').textContent = _boxChoice.price > 0 ? '+₹' + _boxChoice.price : 'Free';
+                document.getElementById('sum-box').style.color = _boxChoice.price > 0 ? 'var(--gold)' : '#5cb85c';
+            } else {
+                boxRow.style.display = 'none';
+            }
+
             if (_appliedCoupon) {
                 document.getElementById('discount-row').style.display = 'flex';
                 document.getElementById('sum-discount').textContent = '-₹' + discount.toLocaleString('en-IN');
@@ -594,6 +606,8 @@
             const subtotal = cartItems.reduce((s, i) => s + parseFloat(i.price) * (i.qty || 1), 0);
             const delivery = subtotal >= DELIVERY_THRESHOLD ? 0 : DELIVERY_CHARGE;
             const discount = _appliedCoupon ? _appliedCoupon.discount : 0;
+            const allBangles_pay = cartItems.every(i => (i.category || '').toLowerCase().includes('bangle'));
+            const boxPrice = (!allBangles_pay && _boxChoice) ? (_boxChoice.price || 0) : 0;
 
             try {
                 const res = await fetch('/api/orders/create', {
@@ -603,7 +617,9 @@
                         address: { name, phone, line1, line2, city, state, pincode, country: 'India', email },
                         email,
                         couponId: _appliedCoupon?.couponId || null,
-                        discount
+                        discount,
+                        box: _boxChoice ? { label: _boxChoice.label, size: _boxChoice.size, price: boxPrice } : null,
+                        boxCharge: boxPrice
                     })
                 });
                 const data = await res.json();

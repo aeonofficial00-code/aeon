@@ -476,62 +476,6 @@
             document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
         }
     </script>
-    <!-- ═══════════════════════ PACKAGING MODAL ═══════════════════════ -->
-    <div class="modal-overlay" id="pack-modal">
-        <div class="modal" style="max-width:500px;text-align:center;padding:32px 24px;">
-            <h3 style="font-family:var(--font-heading);font-size:24px;margin-bottom:8px;color:var(--gold);">Choose
-                Packaging</h3>
-            <p style="color:var(--text-muted);font-size:13px;margin-bottom:24px;">Add a premium velvet box to make your
-                gift extra special.</p>
-
-            <div class="pack-options"
-                style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px;text-align:left;">
-                <!-- Option 1: Free -->
-                <label class="pack-option"
-                    style="display:flex;align-items:center;gap:16px;padding:16px;border:1px solid rgba(201,169,110,0.3);border-radius:12px;cursor:pointer;transition:border-color 0.2s;">
-                    <input type="radio" name="pack_type" value="free" checked
-                        style="accent-color:var(--gold);width:16px;height:16px;" />
-                    <div style="flex:1;">
-                        <div style="font-size:14px;color:#fff;font-weight:500;">Standard AEON Box (4"x4")</div>
-                        <div style="font-size:12px;color:calc(var(--text-muted)*1.2);">Included with your order</div>
-                    </div>
-                    <div style="font-size:13px;color:var(--gold);font-weight:600;">FREE</div>
-                </label>
-
-                <!-- Option 2: Medium -->
-                <label class="pack-option"
-                    style="display:flex;align-items:center;gap:16px;padding:16px;border:1px solid rgba(201,169,110,0.15);border-radius:12px;cursor:pointer;transition:border-color 0.2s;">
-                    <input type="radio" name="pack_type" value="velvet_medium"
-                        style="accent-color:var(--gold);width:16px;height:16px;" />
-                    <div style="flex:1;">
-                        <div style="font-size:14px;color:#fff;font-weight:500;">Premium Velvet Box (8"x6")</div>
-                        <div style="font-size:12px;color:var(--text-muted);">Luxurious finish, perfect for gifting</div>
-                    </div>
-                    <div style="font-size:13px;color:var(--gold);font-weight:600;">+₹270</div>
-                </label>
-
-                <!-- Option 3: Large -->
-                <label class="pack-option"
-                    style="display:flex;align-items:center;gap:16px;padding:16px;border:1px solid rgba(201,169,110,0.15);border-radius:12px;cursor:pointer;transition:border-color 0.2s;">
-                    <input type="radio" name="pack_type" value="velvet_large"
-                        style="accent-color:var(--gold);width:16px;height:16px;" />
-                    <div style="flex:1;">
-                        <div style="font-size:14px;color:#fff;font-weight:500;">Premium Velvet Box Large (10"x6")</div>
-                        <div style="font-size:12px;color:var(--text-muted);">For grand presentation</div>
-                    </div>
-                    <div style="font-size:13px;color:var(--gold);font-weight:600;">+₹300</div>
-                </label>
-            </div>
-
-            <div style="display:flex;gap:12px;justify-content:center;">
-                <button class="btn btn-outline" style="flex:1;" onclick="closePackModal()">Cancel</button>
-                <button class="btn btn-gold"
-                    style="flex:1;background:linear-gradient(135deg,#9E7A40,var(--gold));color:#000;"
-                    id="pack-confirm-btn">Add to Cart</button>
-            </div>
-        </div>
-    </div>
-
 </body>
 
 </html>

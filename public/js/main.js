@@ -6,104 +6,35 @@
 // ── CART STATE ────────────────────────────────────
 let cart = JSON.parse(localStorage.getItem('aeon_cart') || '[]');
 
+// ── BOX SELECTION STATE ───────────────────────────
+const BOX_OPTIONS = [
+  { id: 'box_10x6', label: '10"×6" Velvet Box', size: '10"×6"', price: 300, img: '/uploads/10x6.jpeg' },
+  { id: 'box_8x6', label: '8"×6" Velvet Box', size: '8"×6"', price: 270, img: '/uploads/8x6.jpeg' },
+  { id: 'box_free', label: 'Standard Box', size: '4"×4"', price: 0, img: '/uploads/4x4.png' },
+];
+let _selectedBox = JSON.parse(localStorage.getItem('aeon_box_choice') || 'null');
+
+
 function saveCart() {
   localStorage.setItem('aeon_cart', JSON.stringify(cart));
   updateCartUI();
 }
 
-let pendingCartItem = null;
-
 function addToCart(product) {
-  // If no packaging passed and product is NOT a bangle, prompt for packaging!
-  if (!product.packaging && !(product.category || '').toLowerCase().includes('bangle')) {
-    openPackModal(product);
-    return;
-  }
-
-  // Generate a unique ID based on product ID + packaging type so different boxes stack separately
-  const packId = product.packaging ? `-${product.packaging.id}` : '';
-  const cartItemId = `${product.id}${packId}`;
-
-  const existing = cart.find(i => i.cartItemId === cartItemId);
+  const existing = cart.find(i => i.id === product.id);
   if (existing) {
     existing.qty = (existing.qty || 1) + 1;
   } else {
-    cart.push({ ...product, cartItemId, qty: 1 });
+    cart.push({ ...product, qty: 1 });
   }
   saveCart();
   showToast(`Added "${product.name}" to cart! 🛍️`);
 }
 
-function removeFromCart(cartItemId) {
-  cart = cart.filter(i => i.cartItemId !== cartItemId);
+function removeFromCart(id) {
+  cart = cart.filter(i => i.id !== id);
   saveCart();
 }
-
-// ── PACKAGING MODAL LOGIC ─────────────────────────────
-function openPackModal(product) {
-  pendingCartItem = product;
-  const modal = document.getElementById('pack-modal');
-  if (!modal) {
-    // Fallback if modal isn't on the page for some reason
-    addToCartWithPackaging(null);
-    return;
-  }
-
-  // Reset radios
-  const firstRadio = modal.querySelector('input[type="radio"]');
-  if (firstRadio) firstRadio.checked = true;
-
-  modal.classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
-function closePackModal() {
-  const modal = document.getElementById('pack-modal');
-  if (modal) modal.classList.remove('open');
-  document.body.style.overflow = '';
-  pendingCartItem = null;
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  const confirmBtn = document.getElementById('pack-confirm-btn');
-  if (confirmBtn) {
-    confirmBtn.addEventListener('click', () => {
-      const selected = document.querySelector('input[name="pack_type"]:checked')?.value || 'free';
-      let packData = null;
-      if (selected === 'velvet_medium') {
-        packData = { id: 'v_med', name: 'Premium Velvet Box (8"x6")', price: 270 };
-      } else if (selected === 'velvet_large') {
-        packData = { id: 'v_lrg', name: 'Premium Velvet Box Large (10"x6")', price: 300 };
-      }
-      addToCartWithPackaging(packData);
-    });
-  }
-});
-
-function addToCartWithPackaging(packData) {
-  if (!pendingCartItem) return;
-  const product = { ...pendingCartItem };
-  if (packData) {
-    product.packaging = packData;
-  } else {
-    product.packaging = { id: 'free', name: 'Standard AEON Box', price: 0 };
-  }
-  closePackModal();
-
-  // Directly add to cart bypassing the modal check
-  const packId = product.packaging ? `-${product.packaging.id}` : '';
-  const cartItemId = `${product.id}${packId}`;
-
-  const existing = cart.find(i => i.cartItemId === cartItemId);
-  if (existing) {
-    existing.qty = (existing.qty || 1) + 1;
-  } else {
-    cart.push({ ...product, cartItemId, qty: 1 });
-  }
-  saveCart();
-  showToast(`Added "${product.name}" to cart! 🛍️`);
-}
-
 
 function updateCartUI() {
   const count = cart.reduce((s, i) => s + (i.qty || 1), 0);
@@ -115,8 +46,8 @@ function updateCartUI() {
   renderCartItems();
 }
 
-function changeQty(cartItemId, delta) {
-  const item = cart.find(i => i.cartItemId === cartItemId);
+function changeQty(id, delta) {
+  const item = cart.find(i => i.id === id);
   if (!item) return;
   item.qty = Math.max(1, (item.qty || 1) + delta);
   saveCart();
@@ -142,47 +73,81 @@ function renderCartItems() {
 
   list.innerHTML = cart.map(item => {
     const imgSrc = item.thumb || (item.images && item.images[0]) || '';
-    const basePrice = parseFloat(item.price);
-    const packPrice = item.packaging ? (item.packaging.price || 0) : 0;
-    const linePrice = (basePrice + packPrice) * (item.qty || 1);
-
+    const linePrice = parseFloat(item.price) * (item.qty || 1);
     return `
     <div class="cart-item" style="border-bottom:1px solid rgba(201,169,110,0.07);padding:14px 0;display:flex;gap:12px;align-items:center;">
       <img src="${imgSrc}" alt="${item.name}" style="width:60px;height:60px;border-radius:10px;object-fit:cover;border:1px solid rgba(201,169,110,0.1);background:#1a1a1a;flex-shrink:0;" onerror="this.style.display='none'"/>
       <div style="flex:1;min-width:0;">
         <p style="font-size:13px;color:var(--text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name}</p>
-        <p style="font-size:11px;color:var(--text-muted);margin:2px 0 ${item.selectedSize || item.packaging ? '3px' : '8px'};letter-spacing:0.5px;">${item.category}</p>
-        ${item.selectedSize ? `<p style="font-size:10px;color:var(--gold);letter-spacing:1px;margin:0 0 4px 0;text-transform:uppercase;">Size: ${item.selectedSize}</p>` : ''}
-        ${item.packaging && item.packaging.price > 0 ? `<p style="font-size:10px;color:var(--gold-light);margin-bottom:8px;">+ ${item.packaging.name}</p>` : ''}
-        ${item.packaging && item.packaging.price === 0 ? `<p style="font-size:10px;color:var(--text-muted);margin-bottom:8px;">+ ${item.packaging.name}</p>` : ''}
+        <p style="font-size:11px;color:var(--text-muted);margin:2px 0 ${item.selectedSize ? '3px' : '8px'};letter-spacing:0.5px;">${item.category}</p>
+        ${item.selectedSize ? `<p style="font-size:10px;color:var(--gold);letter-spacing:1px;margin-bottom:8px;text-transform:uppercase;">Size: ${item.selectedSize}</p>` : ''}
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
           <div style="display:flex;align-items:center;gap:0;border:1px solid rgba(201,169,110,0.2);border-radius:20px;overflow:hidden;">
-            <button onclick="changeQty('${item.cartItemId}',-1)" style="background:none;border:none;color:var(--gold);width:28px;height:26px;cursor:pointer;font-size:14px;transition:background 0.2s;" onmouseover="this.style.background='rgba(201,169,110,0.1)'" onmouseout="this.style.background='none'">−</button>
+            <button onclick="changeQty('${item.id}',-1)" style="background:none;border:none;color:var(--gold);width:28px;height:26px;cursor:pointer;font-size:14px;transition:background 0.2s;" onmouseover="this.style.background='rgba(201,169,110,0.1)'" onmouseout="this.style.background='none'">−</button>
             <span style="font-size:12px;color:var(--text);min-width:20px;text-align:center;">${item.qty || 1}</span>
-            <button onclick="changeQty('${item.cartItemId}',1)" style="background:none;border:none;color:var(--gold);width:28px;height:26px;cursor:pointer;font-size:14px;transition:background 0.2s;" onmouseover="this.style.background='rgba(201,169,110,0.1)'" onmouseout="this.style.background='none'">+</button>
+            <button onclick="changeQty('${item.id}',1)" style="background:none;border:none;color:var(--gold);width:28px;height:26px;cursor:pointer;font-size:14px;transition:background 0.2s;" onmouseover="this.style.background='rgba(201,169,110,0.1)'" onmouseout="this.style.background='none'">+</button>
           </div>
           <span style="font-size:13px;color:var(--gold);font-weight:600;">₹${linePrice.toLocaleString('en-IN')}</span>
         </div>
       </div>
-      <button onclick="removeFromCart('${item.cartItemId}')" style="background:none;border:none;color:rgba(255,255,255,0.2);font-size:16px;cursor:pointer;flex-shrink:0;padding:4px;transition:color 0.2s;" onmouseover="this.style.color='rgba(255,100,100,0.7)'" onmouseout="this.style.color='rgba(255,255,255,0.2)'">✕</button>
+      <button onclick="removeFromCart('${item.id}')" style="background:none;border:none;color:rgba(255,255,255,0.2);font-size:16px;cursor:pointer;flex-shrink:0;padding:4px;transition:color 0.2s;" onmouseover="this.style.color='rgba(255,100,100,0.7)'" onmouseout="this.style.color='rgba(255,255,255,0.2)'">✕</button>
     </div>`;
   }).join('');
 
-  const subtotal = cart.reduce((s, i) => {
-    const p = parseFloat(i.price) + (i.packaging ? (i.packaging.price || 0) : 0);
-    return s + p * (i.qty || 1);
-  }, 0);
+  // ── BOX UPSELL ─────────────────────────────────────
+  // Check if cart is bangles-only (skip upsell if so)
+  const allBangles = cart.every(i => (i.category || '').toLowerCase().includes('bangle'));
+
+  // Auto-select free box for bangles-only cart
+  if (allBangles) {
+    _selectedBox = BOX_OPTIONS[2]; // free box
+    localStorage.setItem('aeon_box_choice', JSON.stringify(_selectedBox));
+  }
+
+  const boxPrice = (_selectedBox && !allBangles) ? (_selectedBox.price || 0) : 0;
+
+  const subtotal = cart.reduce((s, i) => s + parseFloat(i.price) * (i.qty || 1), 0);
   const deliveryFree = subtotal >= 999;
   const delivery = deliveryFree ? 0 : 99;
-  const total = subtotal + delivery;
+  const total = subtotal + delivery + boxPrice;
 
   const totalEl = document.getElementById('cart-total');
   if (totalEl) totalEl.textContent = `₹${total.toLocaleString('en-IN')}`;
 
-  // Inject breakdown + checkout button into footer
+  // Inject breakdown + box upsell + checkout button into footer
   if (footer) {
     footer.style.display = 'block';
+    const boxUpsellHtml = allBangles ? '' : `
+      <div style="margin:14px 0;">
+        <p style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+          Choose Packaging
+        </p>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          ${BOX_OPTIONS.map(b => {
+      const isSelected = _selectedBox && _selectedBox.id === b.id;
+      return `<div onclick="selectBox('${b.id}')" id="box-opt-${b.id}" style="
+              display:flex;align-items:center;gap:10px;padding:9px 12px;
+              border-radius:10px;cursor:pointer;transition:all 0.2s;
+              border:1px solid ${isSelected ? 'rgba(201,169,110,0.6)' : 'rgba(255,255,255,0.07)'};
+              background:${isSelected ? 'rgba(201,169,110,0.08)' : 'transparent'};
+            ">
+              <img src="${b.img}" alt="${b.label}" style="width:44px;height:34px;object-fit:cover;border-radius:6px;border:1px solid rgba(255,255,255,0.08);flex-shrink:0;" onerror="this.style.display='none'"/>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:12px;color:${isSelected ? 'var(--gold)' : '#ddd'};font-weight:500;">${b.label}</div>
+                <div style="font-size:10px;color:var(--text-muted);letter-spacing:0.5px;">${b.size}</div>
+              </div>
+              <div style="font-size:12px;font-weight:600;color:${b.price === 0 ? '#5cb85c' : 'var(--gold)'};white-space:nowrap;">
+                ${b.price === 0 ? 'Free' : '+₹' + b.price}
+              </div>
+              ${isSelected ? `<div style="width:16px;height:16px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>` : `<div style="width:16px;height:16px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.15);flex-shrink:0;"></div>`}
+            </div>`;
+    }).join('')}
+        </div>
+      </div>`;
+
     footer.innerHTML = `
+      ${boxUpsellHtml}
       <div style="border-top:1px solid rgba(201,169,110,0.08);padding-top:14px;margin-bottom:12px;">
         <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:6px;">
           <span>Subtotal</span><span>₹${subtotal.toLocaleString('en-IN')}</span>
@@ -191,6 +156,10 @@ function renderCartItems() {
           <span>Delivery</span><span style="color:${deliveryFree ? '#5cb85c' : 'inherit'}">${deliveryFree ? 'FREE' : '₹99'}</span>
         </div>
         ${deliveryFree ? '' : '<p style="font-size:10px;color:var(--text-muted);margin-bottom:4px;">Add ₹' + (999 - Math.round(subtotal)) + ' more for free delivery</p>'}
+        ${!allBangles && _selectedBox && _selectedBox.price > 0 ? `
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:4px;">
+          <span>Box (${_selectedBox.size})</span><span style="color:var(--gold);">+₹${_selectedBox.price}</span>
+        </div>` : ''}
         <div style="display:flex;justify-content:space-between;font-size:15px;color:var(--gold);font-weight:600;margin-top:10px;padding-top:10px;border-top:1px solid rgba(201,169,110,0.08);">
           <span>Total</span><span>₹${total.toLocaleString('en-IN')}</span>
         </div>
@@ -209,6 +178,12 @@ function renderCartItems() {
       </a>
       <p style="text-align:center;font-size:10px;color:rgba(255,255,255,0.2);margin-top:8px;letter-spacing:1px;">🔒 Secured by Razorpay</p>`;
   }
+}
+
+function selectBox(boxId) {
+  _selectedBox = BOX_OPTIONS.find(b => b.id === boxId) || null;
+  localStorage.setItem('aeon_box_choice', JSON.stringify(_selectedBox));
+  renderCartItems();
 }
 
 
