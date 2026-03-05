@@ -11,21 +11,99 @@ function saveCart() {
   updateCartUI();
 }
 
+let pendingCartItem = null;
+
 function addToCart(product) {
-  const existing = cart.find(i => i.id === product.id);
+  // If no packaging passed and product is NOT a bangle, prompt for packaging!
+  if (!product.packaging && !(product.category || '').toLowerCase().includes('bangle')) {
+    openPackModal(product);
+    return;
+  }
+
+  // Generate a unique ID based on product ID + packaging type so different boxes stack separately
+  const packId = product.packaging ? `-${product.packaging.id}` : '';
+  const cartItemId = `${product.id}${packId}`;
+
+  const existing = cart.find(i => i.cartItemId === cartItemId);
   if (existing) {
     existing.qty = (existing.qty || 1) + 1;
   } else {
-    cart.push({ ...product, qty: 1 });
+    cart.push({ ...product, cartItemId, qty: 1 });
   }
   saveCart();
   showToast(`Added "${product.name}" to cart! 🛍️`);
 }
 
-function removeFromCart(id) {
-  cart = cart.filter(i => i.id !== id);
+function removeFromCart(cartItemId) {
+  cart = cart.filter(i => i.cartItemId !== cartItemId);
   saveCart();
 }
+
+// ── PACKAGING MODAL LOGIC ─────────────────────────────
+function openPackModal(product) {
+  pendingCartItem = product;
+  const modal = document.getElementById('pack-modal');
+  if (!modal) {
+    // Fallback if modal isn't on the page for some reason
+    addToCartWithPackaging(null);
+    return;
+  }
+
+  // Reset radios
+  const firstRadio = modal.querySelector('input[type="radio"]');
+  if (firstRadio) firstRadio.checked = true;
+
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closePackModal() {
+  const modal = document.getElementById('pack-modal');
+  if (modal) modal.classList.remove('open');
+  document.body.style.overflow = '';
+  pendingCartItem = null;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const confirmBtn = document.getElementById('pack-confirm-btn');
+  if (confirmBtn) {
+    confirmBtn.addEventListener('click', () => {
+      const selected = document.querySelector('input[name="pack_type"]:checked')?.value || 'free';
+      let packData = null;
+      if (selected === 'velvet_medium') {
+        packData = { id: 'v_med', name: 'Premium Velvet Box (8"x6")', price: 270 };
+      } else if (selected === 'velvet_large') {
+        packData = { id: 'v_lrg', name: 'Premium Velvet Box Large (10"x6")', price: 300 };
+      }
+      addToCartWithPackaging(packData);
+    });
+  }
+});
+
+function addToCartWithPackaging(packData) {
+  if (!pendingCartItem) return;
+  const product = { ...pendingCartItem };
+  if (packData) {
+    product.packaging = packData;
+  } else {
+    product.packaging = { id: 'free', name: 'Standard AEON Box', price: 0 };
+  }
+  closePackModal();
+
+  // Directly add to cart bypassing the modal check
+  const packId = product.packaging ? `-${product.packaging.id}` : '';
+  const cartItemId = `${product.id}${packId}`;
+
+  const existing = cart.find(i => i.cartItemId === cartItemId);
+  if (existing) {
+    existing.qty = (existing.qty || 1) + 1;
+  } else {
+    cart.push({ ...product, cartItemId, qty: 1 });
+  }
+  saveCart();
+  showToast(`Added "${product.name}" to cart! 🛍️`);
+}
+
 
 function updateCartUI() {
   const count = cart.reduce((s, i) => s + (i.qty || 1), 0);
@@ -37,8 +115,8 @@ function updateCartUI() {
   renderCartItems();
 }
 
-function changeQty(id, delta) {
-  const item = cart.find(i => i.id === id);
+function changeQty(cartItemId, delta) {
+  const item = cart.find(i => i.cartItemId === cartItemId);
   if (!item) return;
   item.qty = Math.max(1, (item.qty || 1) + delta);
   saveCart();
@@ -64,28 +142,36 @@ function renderCartItems() {
 
   list.innerHTML = cart.map(item => {
     const imgSrc = item.thumb || (item.images && item.images[0]) || '';
-    const linePrice = parseFloat(item.price) * (item.qty || 1);
+    const basePrice = parseFloat(item.price);
+    const packPrice = item.packaging ? (item.packaging.price || 0) : 0;
+    const linePrice = (basePrice + packPrice) * (item.qty || 1);
+
     return `
     <div class="cart-item" style="border-bottom:1px solid rgba(201,169,110,0.07);padding:14px 0;display:flex;gap:12px;align-items:center;">
       <img src="${imgSrc}" alt="${item.name}" style="width:60px;height:60px;border-radius:10px;object-fit:cover;border:1px solid rgba(201,169,110,0.1);background:#1a1a1a;flex-shrink:0;" onerror="this.style.display='none'"/>
       <div style="flex:1;min-width:0;">
         <p style="font-size:13px;color:var(--text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name}</p>
-        <p style="font-size:11px;color:var(--text-muted);margin:2px 0 ${item.selectedSize ? '3px' : '8px'};letter-spacing:0.5px;">${item.category}</p>
-        ${item.selectedSize ? `<p style="font-size:10px;color:var(--gold);letter-spacing:1px;margin-bottom:8px;text-transform:uppercase;">Size: ${item.selectedSize}</p>` : ''}
+        <p style="font-size:11px;color:var(--text-muted);margin:2px 0 ${item.selectedSize || item.packaging ? '3px' : '8px'};letter-spacing:0.5px;">${item.category}</p>
+        ${item.selectedSize ? `<p style="font-size:10px;color:var(--gold);letter-spacing:1px;margin:0 0 4px 0;text-transform:uppercase;">Size: ${item.selectedSize}</p>` : ''}
+        ${item.packaging && item.packaging.price > 0 ? `<p style="font-size:10px;color:var(--gold-light);margin-bottom:8px;">+ ${item.packaging.name}</p>` : ''}
+        ${item.packaging && item.packaging.price === 0 ? `<p style="font-size:10px;color:var(--text-muted);margin-bottom:8px;">+ ${item.packaging.name}</p>` : ''}
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
           <div style="display:flex;align-items:center;gap:0;border:1px solid rgba(201,169,110,0.2);border-radius:20px;overflow:hidden;">
-            <button onclick="changeQty('${item.id}',-1)" style="background:none;border:none;color:var(--gold);width:28px;height:26px;cursor:pointer;font-size:14px;transition:background 0.2s;" onmouseover="this.style.background='rgba(201,169,110,0.1)'" onmouseout="this.style.background='none'">−</button>
+            <button onclick="changeQty('${item.cartItemId}',-1)" style="background:none;border:none;color:var(--gold);width:28px;height:26px;cursor:pointer;font-size:14px;transition:background 0.2s;" onmouseover="this.style.background='rgba(201,169,110,0.1)'" onmouseout="this.style.background='none'">−</button>
             <span style="font-size:12px;color:var(--text);min-width:20px;text-align:center;">${item.qty || 1}</span>
-            <button onclick="changeQty('${item.id}',1)" style="background:none;border:none;color:var(--gold);width:28px;height:26px;cursor:pointer;font-size:14px;transition:background 0.2s;" onmouseover="this.style.background='rgba(201,169,110,0.1)'" onmouseout="this.style.background='none'">+</button>
+            <button onclick="changeQty('${item.cartItemId}',1)" style="background:none;border:none;color:var(--gold);width:28px;height:26px;cursor:pointer;font-size:14px;transition:background 0.2s;" onmouseover="this.style.background='rgba(201,169,110,0.1)'" onmouseout="this.style.background='none'">+</button>
           </div>
           <span style="font-size:13px;color:var(--gold);font-weight:600;">₹${linePrice.toLocaleString('en-IN')}</span>
         </div>
       </div>
-      <button onclick="removeFromCart('${item.id}')" style="background:none;border:none;color:rgba(255,255,255,0.2);font-size:16px;cursor:pointer;flex-shrink:0;padding:4px;transition:color 0.2s;" onmouseover="this.style.color='rgba(255,100,100,0.7)'" onmouseout="this.style.color='rgba(255,255,255,0.2)'">✕</button>
+      <button onclick="removeFromCart('${item.cartItemId}')" style="background:none;border:none;color:rgba(255,255,255,0.2);font-size:16px;cursor:pointer;flex-shrink:0;padding:4px;transition:color 0.2s;" onmouseover="this.style.color='rgba(255,100,100,0.7)'" onmouseout="this.style.color='rgba(255,255,255,0.2)'">✕</button>
     </div>`;
   }).join('');
 
-  const subtotal = cart.reduce((s, i) => s + parseFloat(i.price) * (i.qty || 1), 0);
+  const subtotal = cart.reduce((s, i) => {
+    const p = parseFloat(i.price) + (i.packaging ? (i.packaging.price || 0) : 0);
+    return s + p * (i.qty || 1);
+  }, 0);
   const deliveryFree = subtotal >= 999;
   const delivery = deliveryFree ? 0 : 99;
   const total = subtotal + delivery;

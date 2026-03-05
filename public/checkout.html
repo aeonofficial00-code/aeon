@@ -495,23 +495,34 @@
 
         function renderSummary() {
             const container = document.getElementById('summary-items');
-            container.innerHTML = cartItems.map(item => `
+            container.innerHTML = cartItems.map(item => {
+                const basePrice = parseFloat(item.price);
+                const packPrice = item.packaging ? (item.packaging.price || 0) : 0;
+                const linePrice = (basePrice + packPrice) * (item.qty || 1);
+
+                return `
         <div class="order-item">
           <img src="${item.thumb || ''}" alt="${item.name}" onerror="this.style.display='none'"/>
           <div class="order-item-info">
             <div class="order-item-name">${item.name}</div>
             <div class="order-item-cat">${item.category}</div>
             ${item.selectedSize ? `<div style="font-size:10px;color:var(--gold);letter-spacing:1px;text-transform:uppercase;margin-top:2px;">Size: ${item.selectedSize}</div>` : ''}
+            ${item.packaging && item.packaging.price > 0 ? `<div style="font-size:10px;color:var(--gold-light);margin-top:2px;">+ ${item.packaging.name}</div>` : ''}
+            ${item.packaging && item.packaging.price === 0 ? `<div style="font-size:10px;color:var(--text-muted);margin-top:2px;">+ ${item.packaging.name}</div>` : ''}
             <span class="order-item-qty">Qty: ${item.qty || 1}</span>
           </div>
-          <div class="order-item-price">₹${(parseFloat(item.price) * (item.qty || 1)).toLocaleString('en-IN')}</div>
+          <div class="order-item-price">₹${linePrice.toLocaleString('en-IN')}</div>
         </div>
-      `).join('');
+        `;
+            }).join('');
             recalcSummary();
         }
 
         function recalcSummary() {
-            const subtotal = cartItems.reduce((s, i) => s + parseFloat(i.price) * (i.qty || 1), 0);
+            const subtotal = cartItems.reduce((s, i) => {
+                const p = parseFloat(i.price) + (i.packaging ? (i.packaging.price || 0) : 0);
+                return s + p * (i.qty || 1);
+            }, 0);
             const delivery = subtotal >= DELIVERY_THRESHOLD ? 0 : DELIVERY_CHARGE;
             const discount = _appliedCoupon ? _appliedCoupon.discount : 0;
             const total = Math.max(0, subtotal + delivery - discount);

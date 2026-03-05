@@ -29,6 +29,28 @@
   --nav-height: 72px;
 }
 
+/* ── Packaging Upsell Modal ─────────────────── */
+#pack-modal .pack-option {
+  position: relative;
+  overflow: hidden;
+}
+
+#pack-modal .pack-option:hover {
+  border-color: rgba(201, 169, 110, 0.4) !important;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+#pack-modal .pack-option input[type="radio"]:checked+div+div {
+  color: var(--gold-light);
+}
+
+#pack-modal .pack-option:has(input[type="radio"]:checked) {
+  border-color: var(--gold) !important;
+  background: rgba(201, 169, 110, 0.05);
+  box-shadow: 0 0 15px rgba(201, 169, 110, 0.1) inset;
+}
+
+/* ── Checkout Page ──────────────────────────── */
 /* ── Reset ──────────────────────────── */
 *,
 *::before,
