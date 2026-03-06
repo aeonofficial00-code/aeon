@@ -613,7 +613,7 @@
                 const res = await fetch('/api/orders/create', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        items: cartItems.map(i => ({ id: i.id, name: i.name, price: i.price, qty: i.qty || 1, thumb: i.thumb, category: i.category })),
+                        items: cartItems.map(i => ({ id: i.id, name: i.name, price: i.price, qty: i.qty || 1, thumb: i.thumb, category: i.category, selectedSize: i.selectedSize || i.size })),
                         address: { name, phone, line1, line2, city, state, pincode, country: 'India', email },
                         email,
                         couponId: _appliedCoupon?.couponId || null,
