@@ -1,0 +1,1 @@
+INSERT INTO categories (id, name, description, created_at, cover_data, cover_name, parent_id) VALUES (1, 'AD NECKLACE', 'Stunning American Diamond necklace, crafted for weddings and celebrations.', '2026-02-25T04:27:37.180Z', 'data:image/png

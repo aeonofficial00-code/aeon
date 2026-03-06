@@ -11,7 +11,7 @@ const path = require('path');
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
 const OUT = path.join(__dirname, '../db/render_backup.sql');
 
-const tables = ['users', 'categories', 'products', 'orders', 'reviews', 'coupons'];
+const tables = ['users', 'categories', 'products', 'orders', 'reviews', 'coupons', 'preorder_listings', 'prebook_requests'];
 
 async function dump() {
     const out = fs.createWriteStream(OUT);
@@ -37,11 +37,14 @@ async function dump() {
             write(`-- ── ${table.toUpperCase()} (${rows.length} rows) ──`);
             write(`TRUNCATE TABLE ${table} RESTART IDENTITY CASCADE;`);
 
+            const colMap = Object.fromEntries(cols.map(c => [c.column_name, c.data_type]));
             const colNames = cols.map(c => c.column_name);
 
             for (const row of rows) {
                 const vals = colNames.map(col => {
                     const v = row[col];
+                    const dataType = colMap[col];
+
                     if (v === null || v === undefined) return 'NULL';
                     if (typeof v === 'boolean') return v ? 'TRUE' : 'FALSE';
                     if (typeof v === 'number') {
@@ -49,16 +52,25 @@ async function dump() {
                         return v;
                     }
                     if (v instanceof Date) return `'${v.toISOString()}'`;
-                    // PostgreSQL TEXT[] — serialize as ARRAY['a','b'] not JSON
-                    if (Array.isArray(v)) {
+
+                    if (dataType === 'json' || dataType === 'jsonb') {
+                        return `'${JSON.stringify(v).replace(/'/g, "''")}'`;
+                    }
+                    if (dataType === 'ARRAY') {
+                        if (!Array.isArray(v)) return 'NULL';
                         if (!v.length) return 'NULL';
                         const escaped = v.map(s => `'${String(s).replace(/'/g, "''")}'`);
                         return `ARRAY[${escaped.join(',')}]`;
                     }
+                    if (Array.isArray(v)) {
+                        return `'${JSON.stringify(v).replace(/'/g, "''")}'`; // Fallback to json text
+                    }
+
                     if (typeof v === 'object') return `'${JSON.stringify(v).replace(/'/g, "''")}'`;
                     // Number-like string that is NaN (e.g. sale_price stored as 'NaN')
                     if (String(v) === 'NaN') return 'NULL';
                     return `'${String(v).replace(/'/g, "''")}'`;
+
                 });
                 write(`INSERT INTO ${table} (${colNames.join(', ')}) VALUES (${vals.join(', ')});`);
             }
