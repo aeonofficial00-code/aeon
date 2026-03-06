@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -510,6 +510,7 @@
 
     // ── PRE-ORDERS ──────────────────────────────────────────────────────────────
     let _currentUser = null;
+    let _allPreorderListings = [];
 
     async function loadPreorders() {
       const section = document.getElementById('preorder-section');
@@ -521,6 +522,7 @@
           fetch('/auth/me').then(r => r.json()).catch(() => ({}))
         ]);
         _currentUser = authData.user || null;
+        _allPreorderListings = listings;
         if (!listings.length) { section.style.display = 'none'; return; }
         section.style.display = '';
         grid.innerHTML = listings.map(p => renderPreorderCard(p)).join('');
@@ -535,7 +537,8 @@
       const slotsLeft = p.max_slots !== null ? Math.max(0, p.max_slots - (p.booked_count || 0)) : null;
       const isClosed = p.closes_at && new Date(p.closes_at) < new Date();
       return `
-        <div class="product-card reveal" style="position:relative;cursor:default;">
+        <div class="product-card reveal" style="position:relative;cursor:pointer;"
+             onclick="openPreorderDetail('${p.id}')">
           <div style="position:absolute;top:10px;left:10px;z-index:4;
             background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;
             font-size:9px;font-weight:700;letter-spacing:2px;padding:4px 10px;
@@ -567,7 +570,7 @@
               <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:4px;letter-spacing:0.5px;">${slotsLeft} slot${slotsLeft !== 1 ? 's' : ''} left</p>
             </div>` : ''}
             <button
-              onclick="openPrebook('${p.id}','${p.name.replace(/'/g, "&apos;")}')"
+              onclick="event.stopPropagation(); openPrebook('${p.id}','${p.name.replace(/'/g, '&apos;')}')"
               ${isClosed || (slotsLeft !== null && slotsLeft === 0) ? 'disabled' : ''}
               style="width:100%;padding:12px;border-radius:8px;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
                 cursor:${isClosed || (slotsLeft !== null && slotsLeft === 0) ? 'not-allowed' : 'pointer'};
@@ -585,6 +588,91 @@
           </div>
         </div>`;
     }
+
+    function openPreorderDetail(id) {
+      const p = _allPreorderListings.find(x => x.id === id);
+      if (!p) return;
+      const slotsLeft = p.max_slots !== null ? Math.max(0, p.max_slots - (p.booked_count || 0)) : null;
+      const isClosed = p.closes_at && new Date(p.closes_at) < new Date();
+      const sizes = Array.isArray(p.available_sizes) && p.available_sizes.length ? p.available_sizes : null;
+
+      document.getElementById('po-detail-inner').innerHTML = `
+        <img src="${p.thumb}" alt="${p.name}" style="width:100%;height:240px;object-fit:cover;border-radius:16px;
+            border:1px solid rgba(168,85,247,0.2);margin-bottom:22px;" onerror="this.style.display='none'" />
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px;">
+          <div>
+            <p style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:rgba(168,85,247,0.8);margin-bottom:4px;">${p.category || 'Pre-order'}</p>
+            <h2 style="font-family:var(--font-heading);font-size:22px;color:var(--text);line-height:1.3;margin-bottom:10px;">${p.name}</h2>
+          </div>
+          <span style="flex-shrink:0;padding:5px 14px;border-radius:20px;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+              background:linear-gradient(135deg,rgba(109,40,217,0.3),rgba(168,85,247,0.3));color:#c084fc;border:1px solid rgba(168,85,247,0.3);">
+            ${isClosed ? 'Closed' : '✨ Pre-order'}</span>
+        </div>
+        <p style="font-size:22px;font-weight:700;color:var(--gold);margin-bottom:${p.description ? '16px' : '0'};">₹${parseFloat(p.price).toLocaleString('en-IN')} <span style="font-size:12px;font-weight:400;color:var(--text-muted);">estimated price</span></p>
+        ${p.description ? `<p style="font-size:14px;color:var(--text-muted);line-height:1.7;margin-bottom:20px;">${p.description}</p>` : ''}
+        <div style="display:grid;grid-template-columns:${sizes ? '1fr 1fr' : '1fr'};gap:12px;margin-bottom:22px;">
+          ${p.expected_delivery ? `
+          <div style="background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.15);border-radius:12px;padding:14px;">
+            <p style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:rgba(168,85,247,0.6);margin-bottom:4px;">Expected Delivery</p>
+            <p style="font-size:14px;font-weight:600;color:var(--text);">📦 ${p.expected_delivery}</p>
+          </div>` : ''}
+          ${slotsLeft !== null ? `
+          <div style="background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.15);border-radius:12px;padding:14px;">
+            <p style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:rgba(168,85,247,0.6);margin-bottom:4px;">Slots</p>
+            <p style="font-size:14px;font-weight:600;color:var(--text);">${slotsLeft} remaining</p>
+            <div style="height:3px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;margin-top:8px;">
+              <div style="height:100%;width:${Math.min(100, Math.round((p.booked_count / p.max_slots) * 100))}%;background:linear-gradient(90deg,#7c3aed,#a855f7);"></div>
+            </div>
+          </div>` : ''}
+        </div>
+        ${sizes ? `
+        <div style="margin-bottom:22px;">
+          <p style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:rgba(168,85,247,0.6);margin-bottom:10px;">Available Sizes</p>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            ${sizes.map(s => `<span style="padding:6px 16px;border-radius:20px;font-size:12px;
+                background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.25);color:#c084fc;">${s}</span>`).join('')}
+          </div>
+        </div>` : ''}
+        ${p.closes_at && !isClosed ? `
+        <div style="margin-bottom:22px;">
+          <p style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:rgba(168,85,247,0.6);margin-bottom:10px;">Booking Closes In</p>
+          <div style="display:flex;gap:8px;">
+            <div class="cd-unit"><span class="cd-num" id="pod-d-${p.id}">--</span><span class="cd-lbl">d</span></div>
+            <div class="cd-unit"><span class="cd-num" id="pod-h-${p.id}">--</span><span class="cd-lbl">h</span></div>
+            <div class="cd-unit"><span class="cd-num" id="pod-m-${p.id}">--</span><span class="cd-lbl">m</span></div>
+            <div class="cd-unit"><span class="cd-num" id="pod-s-${p.id}">--</span><span class="cd-lbl">s</span></div>
+          </div>
+        </div>` : ''}
+        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:14px;margin-bottom:22px;">
+          <p style="font-size:12px;color:var(--text-muted);line-height:1.6;">🔒 <strong style="color:var(--text);">No payment required now.</strong> Pre-booking is completely free — we'll contact you once the item is ready for purchase.</p>
+        </div>
+        <button onclick="document.getElementById('po-detail-modal').style.display='none'; openPrebook('${p.id}','${p.name.replace(/'/g, '&apos;')}')"
+          ${isClosed || (slotsLeft !== null && slotsLeft === 0) ? 'disabled' : ''}
+          style="width:100%;padding:16px;border-radius:10px;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;border:none;
+            background:${isClosed || (slotsLeft !== null && slotsLeft === 0) ? 'rgba(255,255,255,0.06)' : 'linear-gradient(135deg,#6d28d9,#a855f7)'};
+            color:${isClosed || (slotsLeft !== null && slotsLeft === 0) ? 'rgba(255,255,255,0.3)' : '#fff'};
+            cursor:${isClosed || (slotsLeft !== null && slotsLeft === 0) ? 'not-allowed' : 'pointer'};
+            box-shadow:${isClosed || (slotsLeft !== null && slotsLeft === 0) ? 'none' : '0 6px 24px rgba(124,58,237,0.4)'};"
+        >${isClosed ? 'Booking Closed' : (slotsLeft === 0 ? 'Fully Booked' : '✨ Pre-book Now')}</button>
+      `;
+      document.getElementById('po-detail-modal').style.display = 'flex';
+      // Start countdown in the detail panel too
+      if (p.closes_at && !isClosed) {
+        (function tick() {
+          const diff = new Date(p.closes_at) - new Date();
+          const set = (u, v) => { const el = document.getElementById(`pod-${u}-${p.id}`); if (el) el.textContent = String(v).padStart(2, '0'); };
+          if (diff <= 0) { ['d', 'h', 'm', 's'].forEach(u => set(u, 0)); return; }
+          set('d', Math.floor(diff / 86400000)); set('h', Math.floor((diff % 86400000) / 3600000));
+          set('m', Math.floor((diff % 3600000) / 60000)); set('s', Math.floor((diff % 60000) / 1000));
+          setTimeout(tick, 1000);
+        })();
+      }
+    }
+
+    function closePreorderDetail() {
+      document.getElementById('po-detail-modal').style.display = 'none';
+    }
+
 
     function startCountdown(id, closesAt) {
       function tick() {
@@ -711,6 +799,23 @@
       counters.forEach(c => observer.observe(c));
     }
   </script>
+
+  <!-- PRE-ORDER DETAIL SLIDE PANEL -->
+  <div id="po-detail-modal"
+    onclick="if(event.target===this)closePreorderDetail()"
+    style="display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.75);backdrop-filter:blur(10px);align-items:flex-start;justify-content:flex-end;">
+    <div style="width:100%;max-width:480px;height:100vh;overflow-y:auto;background:#0e0e0e;border-left:1px solid rgba(168,85,247,0.2);padding:32px;box-shadow:-20px 0 80px rgba(109,40,217,0.18);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+        <span style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:rgba(168,85,247,0.7);">&#x2728; Pre-order Details</span>
+        <button onclick="closePreorderDetail()" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:6px 14px;color:#aaa;cursor:pointer;font-size:20px;line-height:1;">&#x2715;</button>
+      </div>
+      <div id="po-detail-inner"></div>
+    </div>
+  </div>
+  <style>
+    @keyframes poSlideIn { from { transform:translateX(60px);opacity:0; } to { transform:translateX(0);opacity:1; } }
+    #po-detail-modal > div { animation: poSlideIn 0.26s cubic-bezier(.4,0,.2,1); }
+  </style>
 </body>
 
 </html>
