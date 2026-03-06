@@ -69,6 +69,7 @@ async function migrate() {
               expected_delivery VARCHAR(100),
               closes_at TIMESTAMPTZ,
               max_slots INTEGER DEFAULT NULL,
+              available_sizes JSONB DEFAULT NULL,
               is_active BOOLEAN NOT NULL DEFAULT TRUE,
               created_at TIMESTAMPTZ DEFAULT NOW(),
               updated_at TIMESTAMPTZ DEFAULT NOW()

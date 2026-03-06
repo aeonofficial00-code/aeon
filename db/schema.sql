@@ -110,6 +110,7 @@ CREATE TABLE IF NOT EXISTS preorder_listings (
   expected_delivery VARCHAR(100),                -- e.g. "April 2026"
   closes_at       TIMESTAMPTZ,                   -- NULL = open indefinitely
   max_slots       INTEGER DEFAULT NULL,          -- NULL = unlimited
+  available_sizes JSONB DEFAULT NULL,            -- e.g. ["2.4","2.6","18inch"]
   is_active       BOOLEAN NOT NULL DEFAULT TRUE,
   created_at      TIMESTAMPTZ DEFAULT NOW(),
   updated_at      TIMESTAMPTZ DEFAULT NOW()

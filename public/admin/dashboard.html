@@ -1135,7 +1135,42 @@
         // ══════════════════════════════════════════════════════════════════
         let allPreorderListings = [];
         let editingPreorderId = null;
-        let _poImgData = null; // base64 image for new listing
+        let _poImgData = null;
+        let _poSizes = [];
+
+        // ── Size chip helpers ─────────────────────────────────────────────────
+        function renderPOSizeChips() {
+            const el = document.getElementById('po-size-chips');
+            if (!el) return;
+            el.innerHTML = _poSizes.map((s, i) =>
+                `<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(168,85,247,0.12);border:1px solid rgba(168,85,247,0.3);border-radius:20px;padding:4px 12px;font-size:12px;color:#c084fc;">
+                    ${s}
+                    <span onclick="_poSizes.splice(${i},1);renderPOSizeChips();" style="cursor:pointer;opacity:0.6;font-size:11px;">✕</span>
+                 </span>`
+            ).join('');
+        }
+        function addPOSize() {
+            const inp = document.getElementById('po-size-input');
+            const val = (inp?.value || '').trim();
+            if (!val) return;
+            if (!_poSizes.includes(val)) { _poSizes.push(val); renderPOSizeChips(); }
+            inp.value = '';
+        }
+        function addPOSizePreset(sizes) {
+            sizes.forEach(s => { if (!_poSizes.includes(s)) _poSizes.push(s); });
+            renderPOSizeChips();
+        }
+        function clearPOSizes() { _poSizes = []; renderPOSizeChips(); }
+
+        // ── Category dropdown helper ──────────────────────────────────────────
+        function populatePOCategorySelect(selected = '') {
+            const sel = document.getElementById('po-category');
+            if (!sel) return;
+            sel.innerHTML = '<option value="">Select category…</option>' +
+                allCategories.map(c =>
+                    `<option value="${c.name}" ${c.name === selected ? 'selected' : ''}>${c.name}</option>`
+                ).join('');
+        }
 
         async function loadAdminPreorders() {
             await Promise.all([loadPreorderListings(), loadPrebookRequests()]);
@@ -1201,11 +1236,14 @@
         function openAddPreorderModal() {
             editingPreorderId = null;
             _poImgData = null;
+            _poSizes = [];
             document.getElementById('po-modal-title').textContent = 'New Pre-order Listing';
             document.getElementById('po-form').reset();
             document.getElementById('po-active-toggle').className = 'toggle-track on';
             document.getElementById('po-active-label').textContent = 'Active';
             document.getElementById('po-img-preview').innerHTML = '';
+            populatePOCategorySelect('');
+            renderPOSizeChips();
             document.getElementById('po-modal').classList.add('open');
         }
 
@@ -1214,9 +1252,10 @@
             if (!p) return;
             editingPreorderId = id;
             _poImgData = null;
+            _poSizes = Array.isArray(p.available_sizes) ? [...p.available_sizes] : [];
             document.getElementById('po-modal-title').textContent = 'Edit Pre-order Listing';
             document.getElementById('po-name').value = p.name;
-            document.getElementById('po-category').value = p.category || '';
+            populatePOCategorySelect(p.category || '');
             document.getElementById('po-price').value = p.price;
             document.getElementById('po-description').value = p.description || '';
             document.getElementById('po-delivery').value = p.expected_delivery || '';
@@ -1226,6 +1265,7 @@
             document.getElementById('po-active-toggle').className = 'toggle-track' + (isActive ? ' on' : '');
             document.getElementById('po-active-label').textContent = isActive ? 'Active' : 'Inactive';
             document.getElementById('po-img-preview').innerHTML = `<img src="/api/preorders/${id}/thumb" style="width:80px;height:60px;object-fit:cover;border-radius:8px;" onerror="this.style.display='none'" />`;
+            renderPOSizeChips();
             document.getElementById('po-modal').classList.add('open');
         }
 
@@ -1243,13 +1283,14 @@
             if (!name) { alert('Name is required.'); return; }
             const body = {
                 name,
-                category: document.getElementById('po-category').value.trim(),
+                category: document.getElementById('po-category').value,
                 description: document.getElementById('po-description').value.trim(),
                 price: parseFloat(document.getElementById('po-price').value) || 0,
                 expected_delivery: document.getElementById('po-delivery').value.trim() || null,
                 closes_at: document.getElementById('po-closes-at').value || null,
                 max_slots: document.getElementById('po-max-slots').value ? parseInt(document.getElementById('po-max-slots').value) : null,
                 is_active: _poActiveVal,
+                available_sizes: _poSizes.length ? _poSizes : null,
             };
             if (_poImgData) body.image = _poImgData;
 
@@ -1302,8 +1343,11 @@
                 <div class="form-group"><label>Name *</label><input type="text" id="po-name"
                         placeholder="e.g. AEON Diamond Chand Bali (Pre-order)" required /></div>
                 <div class="form-row">
-                    <div class="form-group"><label>Category</label><input type="text" id="po-category"
-                            placeholder="e.g. Earrings" /></div>
+                    <div class="form-group"><label>Category</label>
+                        <select id="po-category">
+                            <option value="">Select category…</option>
+                        </select>
+                    </div>
                     <div class="form-group"><label>Estimated Price (₹)</label><input type="number" id="po-price"
                             placeholder="1299" min="0" /></div>
                 </div>
@@ -1316,6 +1360,30 @@
                                 style="color:var(--text-muted);font-size:10px;">(blank = unlimited)</span></label><input
                             type="number" id="po-max-slots" placeholder="e.g. 50" min="1" /></div>
                 </div>
+                <!-- SIZE PICKER -->
+                <div class="form-group">
+                    <label>Available Sizes <span
+                            style="color:var(--text-muted);font-size:10px;">(optional)</span></label>
+                    <div id="po-size-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <input id="po-size-input" type="text" placeholder="e.g. 2.4, 18inch…"
+                            style="flex:1;padding:8px 12px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;"
+                            onkeydown="if(event.key==='Enter'){event.preventDefault();addPOSize();}" />
+                        <button type="button" onclick="addPOSize()" class="btn btn-outline"
+                            style="padding:8px 14px;">Add</button>
+                    </div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+                        <button type="button" onclick="addPOSizePreset(['2.4','2.6','2.8'])" class="btn btn-outline"
+                            style="padding:4px 10px;font-size:10px;">Bangle</button>
+                        <button type="button" onclick="addPOSizePreset(['16inch','18inch','20inch'])"
+                            class="btn btn-outline" style="padding:4px 10px;font-size:10px;">Necklace</button>
+                        <button type="button" onclick="addPOSizePreset(['XS','S','M','L','XL'])" class="btn btn-outline"
+                            style="padding:4px 10px;font-size:10px;">Apparel</button>
+                        <button type="button" onclick="clearPOSizes()" class="btn btn-outline"
+                            style="padding:4px 10px;font-size:10px;color:#e07070;border-color:rgba(224,80,80,0.3);">Clear</button>
+                    </div>
+                </div>
+                <!-- /SIZE PICKER -->
                 <div class="form-group"><label>Booking Closes At <span
                             style="color:var(--text-muted);font-size:10px;">(optional)</span></label><input
                         type="datetime-local" id="po-closes-at" /></div>

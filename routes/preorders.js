@@ -35,7 +35,7 @@ router.get('/', async (req, res) => {
     try {
         const { rows } = await pool.query(`
             SELECT id, name, category, description, price, expected_delivery,
-                   closes_at, max_slots, is_active, created_at,
+                   closes_at, max_slots, available_sizes, is_active, created_at,
                    '/api/preorders/' || id || '/thumb' AS thumb,
                    (SELECT COUNT(*) FROM prebook_requests WHERE listing_id = pl.id) AS booked_count
             FROM preorder_listings pl
@@ -112,7 +112,7 @@ router.get('/admin/listings', requireAdmin, async (req, res) => {
     try {
         const { rows } = await pool.query(`
             SELECT pl.id, pl.name, pl.category, pl.price, pl.expected_delivery,
-                   pl.closes_at, pl.max_slots, pl.is_active, pl.created_at,
+                   pl.closes_at, pl.max_slots, pl.available_sizes, pl.is_active, pl.created_at,
                    (SELECT COUNT(*) FROM prebook_requests WHERE listing_id = pl.id) AS booked_count
             FROM preorder_listings pl ORDER BY pl.created_at DESC
         `);
@@ -139,14 +139,15 @@ router.get('/admin/bookings', requireAdmin, async (req, res) => {
 // ── POST /api/preorders/admin/listings ────────────────────────────────────────
 router.post('/admin/listings', requireAdmin, express.json({ limit: '25mb' }), async (req, res) => {
     try {
-        const { name, category, description, price, image, expected_delivery, closes_at, max_slots, is_active } = req.body;
+        const { name, category, description, price, image, expected_delivery, closes_at, max_slots, is_active, available_sizes } = req.body;
         if (!name) return res.status(400).json({ error: 'Name is required' });
         const { rows } = await pool.query(
-            `INSERT INTO preorder_listings (name, category, description, price, image, expected_delivery, closes_at, max_slots, is_active)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id, name, category, price, expected_delivery, closes_at, max_slots, is_active, created_at`,
+            `INSERT INTO preorder_listings (name, category, description, price, image, expected_delivery, closes_at, max_slots, available_sizes, is_active)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id, name, category, price, expected_delivery, closes_at, max_slots, available_sizes, is_active, created_at`,
             [name.trim(), category || '', description || '', parseFloat(price) || 0,
             image || null, expected_delivery || null,
             closes_at || null, max_slots ? parseInt(max_slots) : null,
+            available_sizes ? JSON.stringify(available_sizes) : null,
             is_active !== false]
         );
         res.json(rows[0]);
@@ -156,18 +157,19 @@ router.post('/admin/listings', requireAdmin, express.json({ limit: '25mb' }), as
 // ── PUT /api/preorders/admin/listings/:id ────────────────────────────────────
 router.put('/admin/listings/:id', requireAdmin, express.json({ limit: '25mb' }), async (req, res) => {
     try {
-        const { name, category, description, price, image, expected_delivery, closes_at, max_slots, is_active } = req.body;
+        const { name, category, description, price, image, expected_delivery, closes_at, max_slots, is_active, available_sizes } = req.body;
         const { rows } = await pool.query(
             `UPDATE preorder_listings SET
                 name=$1, category=$2, description=$3, price=$4,
                 ${image ? 'image=$5,' : ''}
                 expected_delivery=$${image ? 6 : 5}, closes_at=$${image ? 7 : 6},
-                max_slots=$${image ? 8 : 7}, is_active=$${image ? 9 : 8}, updated_at=NOW()
-             WHERE id=$${image ? 10 : 9}
-             RETURNING id, name, category, price, expected_delivery, closes_at, max_slots, is_active`,
+                max_slots=$${image ? 8 : 7}, available_sizes=$${image ? 9 : 8},
+                is_active=$${image ? 10 : 9}, updated_at=NOW()
+             WHERE id=$${image ? 11 : 10}
+             RETURNING id, name, category, price, expected_delivery, closes_at, max_slots, available_sizes, is_active`,
             image
-                ? [name, category || '', description || '', parseFloat(price) || 0, image, expected_delivery || null, closes_at || null, max_slots ? parseInt(max_slots) : null, is_active !== false, req.params.id]
-                : [name, category || '', description || '', parseFloat(price) || 0, expected_delivery || null, closes_at || null, max_slots ? parseInt(max_slots) : null, is_active !== false, req.params.id]
+                ? [name, category || '', description || '', parseFloat(price) || 0, image, expected_delivery || null, closes_at || null, max_slots ? parseInt(max_slots) : null, available_sizes ? JSON.stringify(available_sizes) : null, is_active !== false, req.params.id]
+                : [name, category || '', description || '', parseFloat(price) || 0, expected_delivery || null, closes_at || null, max_slots ? parseInt(max_slots) : null, available_sizes ? JSON.stringify(available_sizes) : null, is_active !== false, req.params.id]
         );
         if (!rows.length) return res.status(404).json({ error: 'Not found' });
         res.json(rows[0]);
