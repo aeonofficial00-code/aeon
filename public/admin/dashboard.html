@@ -627,6 +627,7 @@
             <button class="sidebar-link active" onclick="showTab('products')">📦 Products</button>
             <button class="sidebar-link" onclick="showTab('categories')">🗂️ Categories</button>
             <button class="sidebar-link" onclick="showTab('orders')">🛒 Orders</button>
+            <button class="sidebar-link" onclick="showTab('preorders')">🔖 Pre-orders</button>
             <button class="sidebar-link" onclick="showTab('users')">👤 Users</button>
             <a href="/" class="sidebar-link" style="text-decoration:none;" target="_blank">🌐 View Store</a>
         </nav>
@@ -742,6 +743,60 @@
                         <tbody id="users-tbody">
                             <tr>
                                 <td colspan="4" style="padding:40px;text-align:center;color:var(--text-muted);">Loading…
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- PREORDERS TAB -->
+            <div id="tab-preorders" class="tab-content" style="display:none;">
+                <div class="table-wrap" style="margin-bottom:28px;">
+                    <div class="table-header">
+                        <span style="font-size:14px;letter-spacing:1px;color:#a855f7;">🔖 Pre-order Listings</span>
+                        <button class="btn btn-gold" onclick="openAddPreorderModal()"
+                            style="background:linear-gradient(135deg,#6d28d9,#a855f7);">+ New Listing</button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Image</th>
+                                <th>Name</th>
+                                <th>Price (est.)</th>
+                                <th>Delivery</th>
+                                <th>Slots</th>
+                                <th>Booked</th>
+                                <th>Closes At</th>
+                                <th>Active</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="preorders-tbody">
+                            <tr>
+                                <td colspan="9" style="padding:40px;text-align:center;color:var(--text-muted);">Loading…
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="table-wrap">
+                    <div class="table-header">
+                        <span style="font-size:14px;letter-spacing:1px;color:var(--gold);">📋 Booking Requests</span>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Listing</th>
+                                <th>Customer</th>
+                                <th>Email</th>
+                                <th>Qty</th>
+                                <th>Booked On</th>
+                            </tr>
+                        </thead>
+                        <tbody id="prebook-requests-tbody">
+                            <tr>
+                                <td colspan="5" style="padding:40px;text-align:center;color:var(--text-muted);">Loading…
                                 </td>
                             </tr>
                         </tbody>
@@ -1074,7 +1129,220 @@
                 setTimeout(() => loadAdminOrders(), 800);
             } else { alert('Failed to update status.'); }
         }
+
+        // ══════════════════════════════════════════════════════════════════
+        // PRE-ORDERS ADMIN
+        // ══════════════════════════════════════════════════════════════════
+        let allPreorderListings = [];
+        let editingPreorderId = null;
+        let _poImgData = null; // base64 image for new listing
+
+        async function loadAdminPreorders() {
+            await Promise.all([loadPreorderListings(), loadPrebookRequests()]);
+        }
+
+        async function loadPreorderListings() {
+            const tbody = document.getElementById('preorders-tbody');
+            try {
+                const rows = await fetch('/api/preorders/admin/listings', {
+                    headers: { 'x-admin-token': getToken() }
+                }).then(r => r.json());
+                allPreorderListings = rows;
+                renderPreordersTable(rows);
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="9" style="padding:40px;text-align:center;color:#e07070;">Failed to load pre-orders.</td></tr>`;
+            }
+        }
+
+        function renderPreordersTable(rows) {
+            const tbody = document.getElementById('preorders-tbody');
+            if (!rows.length) {
+                tbody.innerHTML = `<tr><td colspan="9" style="padding:40px;text-align:center;color:var(--text-muted);">No pre-order listings yet.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = rows.map(p => `<tr>
+                <td><img src="/api/preorders/${p.id}/thumb" style="width:48px;height:36px;object-fit:cover;border-radius:6px;" onerror="this.style.display='none'" /></td>
+                <td style="font-weight:500;color:var(--text);">${p.name}</td>
+                <td style="color:var(--gold);">₹${parseFloat(p.price).toLocaleString('en-IN')}</td>
+                <td style="color:#a855f7;">${p.expected_delivery || '—'}</td>
+                <td>${p.max_slots ?? '∞'}</td>
+                <td><span style="color:#5cb85c;font-weight:600;">${p.booked_count}</span></td>
+                <td style="font-size:12px;color:var(--text-muted);">${p.closes_at ? new Date(p.closes_at).toLocaleDateString('en-IN') : '—'}</td>
+                <td><span style="color:${p.is_active ? '#5cb85c' : '#e07070'};">${p.is_active ? '✅' : '❌'}</span></td>
+                <td class="td-actions">
+                    <button class="icon-btn icon-btn-edit" onclick="openEditPreorderModal('${p.id}')">✏️</button>
+                    <button class="icon-btn icon-btn-del" onclick="deletePreorderListing('${p.id}','${p.name.replace(/'/g, "\\'")}')" >🗑️</button>
+                </td>
+            </tr>`).join('');
+        }
+
+        async function loadPrebookRequests() {
+            const tbody = document.getElementById('prebook-requests-tbody');
+            try {
+                const rows = await fetch('/api/preorders/admin/bookings', {
+                    headers: { 'x-admin-token': getToken() }
+                }).then(r => r.json());
+                if (!rows.length) {
+                    tbody.innerHTML = `<tr><td colspan="5" style="padding:40px;text-align:center;color:var(--text-muted);">No bookings yet.</td></tr>`;
+                    return;
+                }
+                tbody.innerHTML = rows.map(b => `<tr>
+                    <td style="color:var(--gold);font-weight:500;">${b.listing_name}</td>
+                    <td>${b.user_name || '—'}</td>
+                    <td style="color:var(--text-muted);font-size:12px;">${b.user_email || '—'}</td>
+                    <td style="font-weight:600;">${b.quantity}</td>
+                    <td style="font-size:12px;color:var(--text-muted);">${new Date(b.created_at).toLocaleDateString('en-IN')}</td>
+                </tr>`).join('');
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="5" style="padding:40px;text-align:center;color:#e07070;">Failed to load bookings.</td></tr>`;
+            }
+        }
+
+        function openAddPreorderModal() {
+            editingPreorderId = null;
+            _poImgData = null;
+            document.getElementById('po-modal-title').textContent = 'New Pre-order Listing';
+            document.getElementById('po-form').reset();
+            document.getElementById('po-active-toggle').className = 'toggle-track on';
+            document.getElementById('po-active-label').textContent = 'Active';
+            document.getElementById('po-img-preview').innerHTML = '';
+            document.getElementById('po-modal').classList.add('open');
+        }
+
+        function openEditPreorderModal(id) {
+            const p = allPreorderListings.find(l => l.id === id);
+            if (!p) return;
+            editingPreorderId = id;
+            _poImgData = null;
+            document.getElementById('po-modal-title').textContent = 'Edit Pre-order Listing';
+            document.getElementById('po-name').value = p.name;
+            document.getElementById('po-category').value = p.category || '';
+            document.getElementById('po-price').value = p.price;
+            document.getElementById('po-description').value = p.description || '';
+            document.getElementById('po-delivery').value = p.expected_delivery || '';
+            document.getElementById('po-closes-at').value = p.closes_at ? new Date(p.closes_at).toISOString().slice(0, 16) : '';
+            document.getElementById('po-max-slots').value = p.max_slots ?? '';
+            const isActive = p.is_active;
+            document.getElementById('po-active-toggle').className = 'toggle-track' + (isActive ? ' on' : '');
+            document.getElementById('po-active-label').textContent = isActive ? 'Active' : 'Inactive';
+            document.getElementById('po-img-preview').innerHTML = `<img src="/api/preorders/${id}/thumb" style="width:80px;height:60px;object-fit:cover;border-radius:8px;" onerror="this.style.display='none'" />`;
+            document.getElementById('po-modal').classList.add('open');
+        }
+
+        function closePOModal() { document.getElementById('po-modal').classList.remove('open'); }
+
+        let _poActiveVal = true;
+        function togglePOActive() {
+            _poActiveVal = !_poActiveVal;
+            document.getElementById('po-active-toggle').className = 'toggle-track' + (_poActiveVal ? ' on' : '');
+            document.getElementById('po-active-label').textContent = _poActiveVal ? 'Active' : 'Inactive';
+        }
+
+        async function savePreorderListing() {
+            const name = document.getElementById('po-name').value.trim();
+            if (!name) { alert('Name is required.'); return; }
+            const body = {
+                name,
+                category: document.getElementById('po-category').value.trim(),
+                description: document.getElementById('po-description').value.trim(),
+                price: parseFloat(document.getElementById('po-price').value) || 0,
+                expected_delivery: document.getElementById('po-delivery').value.trim() || null,
+                closes_at: document.getElementById('po-closes-at').value || null,
+                max_slots: document.getElementById('po-max-slots').value ? parseInt(document.getElementById('po-max-slots').value) : null,
+                is_active: _poActiveVal,
+            };
+            if (_poImgData) body.image = _poImgData;
+
+            const url = editingPreorderId
+                ? `/api/preorders/admin/listings/${editingPreorderId}`
+                : '/api/preorders/admin/listings';
+            const method = editingPreorderId ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method, headers: { 'Content-Type': 'application/json', 'x-admin-token': getToken() },
+                body: JSON.stringify(body)
+            });
+            if (res.ok) {
+                closePOModal();
+                loadAdminPreorders();
+            } else {
+                const d = await res.json();
+                alert('Error: ' + (d.error || 'Failed to save'));
+            }
+        }
+
+        async function deletePreorderListing(id, name) {
+            if (!confirm(`Delete pre-order listing "${name}"? All bookings for this listing will also be deleted.`)) return;
+            const res = await fetch(`/api/preorders/admin/listings/${id}`, {
+                method: 'DELETE', headers: { 'x-admin-token': getToken() }
+            });
+            if (res.ok) loadAdminPreorders();
+            else alert('Failed to delete.');
+        }
+
+        // Image upload for pre-order listing
+        function handlePOImageDrop(e) {
+            e.preventDefault();
+            const file = e.dataTransfer?.files[0] || e.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                _poImgData = ev.target.result;
+                document.getElementById('po-img-preview').innerHTML = `<img src="${_poImgData}" style="width:80px;height:60px;object-fit:cover;border-radius:8px;" />`;
+            };
+            reader.readAsDataURL(file);
+        }
     </script>
+
+    <!-- PRE-ORDER ADMIN MODAL -->
+    <div class="modal-overlay" id="po-modal">
+        <div class="modal">
+            <h3 id="po-modal-title">New Pre-order Listing</h3>
+            <form id="po-form" onsubmit="return false;">
+                <div class="form-group"><label>Name *</label><input type="text" id="po-name"
+                        placeholder="e.g. AEON Diamond Chand Bali (Pre-order)" required /></div>
+                <div class="form-row">
+                    <div class="form-group"><label>Category</label><input type="text" id="po-category"
+                            placeholder="e.g. Earrings" /></div>
+                    <div class="form-group"><label>Estimated Price (₹)</label><input type="number" id="po-price"
+                            placeholder="1299" min="0" /></div>
+                </div>
+                <div class="form-group"><label>Description</label><textarea id="po-description" rows="2"
+                        placeholder="Brief description of the pre-order item…"></textarea></div>
+                <div class="form-row">
+                    <div class="form-group"><label>Expected Delivery</label><input type="text" id="po-delivery"
+                            placeholder="e.g. April 2026" /></div>
+                    <div class="form-group"><label>Max Slots <span
+                                style="color:var(--text-muted);font-size:10px;">(blank = unlimited)</span></label><input
+                            type="number" id="po-max-slots" placeholder="e.g. 50" min="1" /></div>
+                </div>
+                <div class="form-group"><label>Booking Closes At <span
+                            style="color:var(--text-muted);font-size:10px;">(optional)</span></label><input
+                        type="datetime-local" id="po-closes-at" /></div>
+                <div class="featured-row">
+                    <div class="toggle-track on" id="po-active-toggle" onclick="togglePOActive()">
+                        <div class="toggle-thumb"></div>
+                    </div>
+                    <span class="toggle-label" id="po-active-label">Active</span>
+                </div>
+                <div class="form-group">
+                    <label>Product Image</label>
+                    <div class="file-drop" onclick="document.getElementById('po-img-input').click()"
+                        ondragover="event.preventDefault()" ondrop="handlePOImageDrop(event)">
+                        Click or drag an image here
+                    </div>
+                    <input type="file" id="po-img-input" accept="image/*" style="display:none;"
+                        onchange="handlePOImageDrop(event)" />
+                    <div id="po-img-preview" style="margin-top:10px;"></div>
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closePOModal()">Cancel</button>
+                <button class="btn btn-gold" onclick="savePreorderListing()"
+                    style="background:linear-gradient(135deg,#6d28d9,#a855f7);">Save Listing</button>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

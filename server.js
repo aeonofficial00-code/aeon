@@ -115,12 +115,14 @@ const adminRouter = require('./routes/admin');
 const authRouter = require('./routes/auth');
 const ordersRouter = require('./routes/orders');
 const couponsRouter = require('./routes/coupons');
+const preordersRouter = require('./routes/preorders');
 
 app.use('/api', apiRouter);
 app.use('/api/admin', adminRouter);
 app.use('/auth', authRouter);
 app.use('/api/orders', ordersRouter);
 app.use('/api/coupons', couponsRouter);
+app.use('/api/preorders', preordersRouter);
 
 // ── Page routes ───────────────────────────────────────────────────────────────
 app.get('/checkout', (req, res) => res.sendFile(path.join(__dirname, 'public', 'checkout.html')));

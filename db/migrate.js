@@ -59,6 +59,29 @@ async function migrate() {
       `ALTER TABLE categories ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES categories(id) ON DELETE SET NULL`,
       `ALTER TABLE products ADD COLUMN IF NOT EXISTS sale_price NUMERIC(10,2) DEFAULT NULL`,
       `ALTER TABLE products ADD COLUMN IF NOT EXISTS is_on_sale BOOLEAN DEFAULT false`,
+      `CREATE TABLE IF NOT EXISTS preorder_listings (
+              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+              name VARCHAR(500) NOT NULL,
+              category VARCHAR(255) NOT NULL DEFAULT '',
+              description TEXT,
+              price DECIMAL(10,2) NOT NULL DEFAULT 0,
+              image TEXT,
+              expected_delivery VARCHAR(100),
+              closes_at TIMESTAMPTZ,
+              max_slots INTEGER DEFAULT NULL,
+              is_active BOOLEAN NOT NULL DEFAULT TRUE,
+              created_at TIMESTAMPTZ DEFAULT NOW(),
+              updated_at TIMESTAMPTZ DEFAULT NOW()
+            )`,
+      `CREATE TABLE IF NOT EXISTS prebook_requests (
+              id SERIAL PRIMARY KEY,
+              listing_id UUID NOT NULL REFERENCES preorder_listings(id) ON DELETE CASCADE,
+              user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+              quantity INTEGER NOT NULL DEFAULT 1,
+              created_at TIMESTAMPTZ DEFAULT NOW()
+            )`,
+      `CREATE INDEX IF NOT EXISTS idx_prebook_listing ON prebook_requests (listing_id)`,
+      `CREATE INDEX IF NOT EXISTS idx_prebook_user ON prebook_requests (user_id)`,
     ];
     for (const sql of alterations) {
       await client.query(sql);

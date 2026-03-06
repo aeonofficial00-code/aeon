@@ -162,6 +162,29 @@
     </div>
   </section>
 
+  <!-- PRE-ORDER BOOKINGS -->
+  <section id="preorder-section"
+    style="display:none;padding:100px 0;
+    background:linear-gradient(180deg,transparent,rgba(138,43,226,0.04),rgba(201,169,110,0.03),transparent);
+    border-top:1px solid rgba(138,43,226,0.12);border-bottom:1px solid rgba(201,169,110,0.08);position:relative;overflow:hidden;">
+    <div style="position:absolute;top:-120px;right:-120px;width:400px;height:400px;border-radius:50%;
+      background:radial-gradient(circle,rgba(138,43,226,0.06) 0%,transparent 70%);pointer-events:none;"></div>
+    <div class="container">
+      <div class="products-header reveal">
+        <div>
+          <p class="section-label" style="color:#b07aff;">✨ Exclusive Access</p>
+          <h2 class="section-title">Pre-order <span
+              style="background:linear-gradient(135deg,#c084fc,#a855f7,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Bookings</span>
+          </h2>
+        </div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.35);letter-spacing:1px;text-align:right;line-height:1.8;">
+          Reserve yours before<br>stock is even made.
+        </div>
+      </div>
+      <div class="products-grid" id="preorder-grid"></div>
+    </div>
+  </section>
+
   <!-- OFFERS / ON SALE SECTION -->
   <section class="products-section" id="offers-section"
     style="display:none; background: linear-gradient(180deg, transparent, rgba(201,169,110,0.04), transparent); border-top: 1px solid rgba(201,169,110,0.1); border-bottom: 1px solid rgba(201,169,110,0.1);">
@@ -326,6 +349,50 @@
   <!-- TOAST -->
   <div class="toast-container" id="toast-container"></div>
 
+  <!-- PRE-BOOK MODAL -->
+  <div id="prebook-modal" onclick="if(event.target===this)closePrebook()" style="
+    display:none;position:fixed;inset:0;z-index:1000;
+    background:rgba(0,0,0,0.75);backdrop-filter:blur(10px);
+    align-items:center;justify-content:center;padding:20px;">
+    <div style="background:var(--dark-2);border:1px solid rgba(138,43,226,0.3);
+      border-radius:24px;padding:36px;width:100%;max-width:420px;position:relative;
+      box-shadow:0 24px 80px rgba(124,58,237,0.3);">
+      <button onclick="closePrebook()" style="position:absolute;top:16px;right:18px;
+        background:none;border:none;color:rgba(255,255,255,0.4);font-size:22px;cursor:pointer;">&times;</button>
+      <p style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#a855f7;margin-bottom:8px;">✨ Exclusive
+        Pre-booking</p>
+      <h3
+        style="font-family:var(--font-heading);font-size:22px;color:var(--gold);letter-spacing:2px;margin-bottom:6px;">
+        Confirm Booking</h3>
+      <p id="prebook-item-name"
+        style="font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:24px;letter-spacing:0.5px;"></p>
+      <div style="margin-bottom:24px;">
+        <label
+          style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:8px;">Quantity</label>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button onclick="const q=document.getElementById('prebook-qty');q.value=Math.max(1,parseInt(q.value)-1)"
+            style="width:36px;height:36px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:#fff;font-size:18px;cursor:pointer;">−</button>
+          <input id="prebook-qty" type="number" min="1" max="10" value="1"
+            style="width:60px;text-align:center;border:1px solid rgba(201,169,110,0.2);background:rgba(255,255,255,0.04);color:var(--gold);font-size:16px;font-weight:600;padding:8px;border-radius:8px;outline:none;" />
+          <button onclick="const q=document.getElementById('prebook-qty');q.value=Math.min(10,parseInt(q.value)+1)"
+            style="width:36px;height:36px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:#fff;font-size:18px;cursor:pointer;">+</button>
+        </div>
+      </div>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);line-height:1.7;margin-bottom:24px;">
+        No payment required now. We’ll contact you via email when your item is ready for dispatch.
+      </p>
+      <button id="prebook-submit" onclick="submitPrebook()" style="
+        width:100%;padding:15px;border:none;border-radius:12px;cursor:pointer;
+        background:linear-gradient(135deg,#6d28d9,#a855f7,#c084fc);
+        color:#fff;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+        box-shadow:0 4px 24px rgba(124,58,237,0.45);transition:all 0.25s;"
+        onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 36px rgba(124,58,237,0.6)'"
+        onmouseout="this.style.transform='none';this.style.boxShadow='0 4px 24px rgba(124,58,237,0.45)'">
+        Confirm Pre-booking
+      </button>
+    </div>
+  </div>
+
   <!-- BACK TO TOP -->
   <button id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Back to top">
     <i data-lucide="chevron-up" style="width:20px;height:20px;"></i>
@@ -341,6 +408,34 @@
         transform: translateX(-50%);
       }
     }
+
+    /* Countdown units */
+    .cd-unit {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .cd-num {
+      font-family: var(--font-heading);
+      font-size: 18px;
+      font-weight: 600;
+      color: #fff;
+      line-height: 1;
+      background: rgba(0, 0, 0, 0.45);
+      border-radius: 6px;
+      padding: 3px 8px;
+      min-width: 34px;
+      text-align: center;
+    }
+
+    .cd-lbl {
+      font-size: 8px;
+      letter-spacing: 1.5px;
+      color: rgba(255, 255, 255, 0.4);
+      text-transform: uppercase;
+    }
   </style>
 
   <script src="/js/main.js"></script>
@@ -352,7 +447,7 @@
     });
 
     async function initHomepage() {
-      await Promise.all([loadCategories(), loadFeatured(), loadSale()]);
+      await Promise.all([loadCategories(), loadFeatured(), loadSale(), loadPreorders()]);
       setupReveal();
       setupParticles();
       setupCounter();
@@ -411,6 +506,137 @@
         grid.innerHTML = featured.slice(0, 8).map(p => renderProductCard(p)).join('');
         if (window.lucide) lucide.createIcons();
       } catch (e) { console.error(e); }
+    }
+
+    // ── PRE-ORDERS ──────────────────────────────────────────────────────────────
+    let _currentUser = null;
+
+    async function loadPreorders() {
+      const section = document.getElementById('preorder-section');
+      const grid = document.getElementById('preorder-grid');
+      try {
+        // fetch user + listings in parallel
+        const [listings, authData] = await Promise.all([
+          fetch('/api/preorders').then(r => r.json()).catch(() => []),
+          fetch('/auth/me').then(r => r.json()).catch(() => ({}))
+        ]);
+        _currentUser = authData.user || null;
+        if (!listings.length) { section.style.display = 'none'; return; }
+        section.style.display = '';
+        grid.innerHTML = listings.map(p => renderPreorderCard(p)).join('');
+        // Kick off countdown timers
+        listings.forEach(p => { if (p.closes_at) startCountdown(p.id, p.closes_at); });
+        if (window.lucide) lucide.createIcons();
+        setupReveal();
+      } catch (e) { section.style.display = 'none'; }
+    }
+
+    function renderPreorderCard(p) {
+      const slotsLeft = p.max_slots !== null ? Math.max(0, p.max_slots - (p.booked_count || 0)) : null;
+      const isClosed = p.closes_at && new Date(p.closes_at) < new Date();
+      return `
+        <div class="product-card reveal" style="position:relative;cursor:default;">
+          <div style="position:absolute;top:10px;left:10px;z-index:4;
+            background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;
+            font-size:9px;font-weight:700;letter-spacing:2px;padding:4px 10px;
+            border-radius:20px;text-transform:uppercase;">${isClosed ? 'Closed' : '✨ Pre-order'}</div>
+          <div class="product-img-wrap">
+            <img class="product-img" src="${p.thumb}" alt="${p.name}" loading="lazy"
+              onerror="this.style.display='none'" />
+            <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,0.7));"></div>
+            ${p.closes_at && !isClosed ? `
+            <div id="cd-${p.id}" style="position:absolute;bottom:12px;left:12px;right:12px;z-index:3;
+              display:flex;gap:6px;justify-content:center;">
+              <div class="cd-unit"><span class="cd-num" id="cd-d-${p.id}">--</span><span class="cd-lbl">d</span></div>
+              <div class="cd-unit"><span class="cd-num" id="cd-h-${p.id}">--</span><span class="cd-lbl">h</span></div>
+              <div class="cd-unit"><span class="cd-num" id="cd-m-${p.id}">--</span><span class="cd-lbl">m</span></div>
+              <div class="cd-unit"><span class="cd-num" id="cd-s-${p.id}">--</span><span class="cd-lbl">s</span></div>
+            </div>` : ''}
+          </div>
+          <div class="product-info">
+            <p class="product-category">${p.category || 'Pre-order'}</p>
+            <h3 class="product-name">${p.name}</h3>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+              <p class="product-price" style="margin-bottom:0;">₹${parseFloat(p.price).toLocaleString('en-IN')}<span> est.</span></p>
+              ${p.expected_delivery ? `<span style="font-size:10px;color:rgba(192,132,252,0.8);letter-spacing:1px;">📦 ${p.expected_delivery}</span>` : ''}
+            </div>
+            ${slotsLeft !== null ? `<div style="margin-bottom:12px;">
+              <div style="height:4px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;">
+                <div style="height:100%;width:${Math.min(100, Math.round((p.booked_count / p.max_slots) * 100))}%;background:linear-gradient(90deg,#7c3aed,#a855f7);border-radius:4px;transition:width 0.5s;"></div>
+              </div>
+              <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:4px;letter-spacing:0.5px;">${slotsLeft} slot${slotsLeft !== 1 ? 's' : ''} left</p>
+            </div>` : ''}
+            <button
+              onclick="openPrebook('${p.id}','${p.name.replace(/'/g, "&apos;")}')"
+              ${isClosed || (slotsLeft !== null && slotsLeft === 0) ? 'disabled' : ''}
+              style="width:100%;padding:12px;border-radius:8px;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+                cursor:${isClosed || (slotsLeft !== null && slotsLeft === 0) ? 'not-allowed' : 'pointer'};
+                background:${isClosed || (slotsLeft !== null && slotsLeft === 0)
+          ? 'rgba(255,255,255,0.06)'
+          : 'linear-gradient(135deg,#6d28d9,#a855f7,#c084fc)'};
+                color:${isClosed || (slotsLeft !== null && slotsLeft === 0) ? 'rgba(255,255,255,0.3)' : '#fff'};
+                border:none;box-shadow:${isClosed || (slotsLeft !== null && slotsLeft === 0) ? 'none' : '0 4px 16px rgba(124,58,237,0.35)'};
+                transition:all 0.25s;"
+              onmouseover="if(!this.disabled){this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 28px rgba(124,58,237,0.55)'}"
+              onmouseout="this.style.transform='none';this.style.boxShadow='0 4px 16px rgba(124,58,237,0.35)'"
+            >
+              ${isClosed ? 'Booking Closed' : (slotsLeft === 0 ? 'Fully Booked' : '✨ Pre-book Now')}
+            </button>
+          </div>
+        </div>`;
+    }
+
+    function startCountdown(id, closesAt) {
+      function tick() {
+        const diff = new Date(closesAt) - new Date();
+        if (diff <= 0) {
+          ['d', 'h', 'm', 's'].forEach(u => { const el = document.getElementById(`cd-${u}-${id}`); if (el) el.textContent = '0'; });
+          return;
+        }
+        const d = Math.floor(diff / 86400000);
+        const h = Math.floor((diff % 86400000) / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        const s = Math.floor((diff % 60000) / 1000);
+        const set = (u, v) => { const el = document.getElementById(`cd-${u}-${id}`); if (el) el.textContent = String(v).padStart(2, '0'); };
+        set('d', d); set('h', h); set('m', m); set('s', s);
+      }
+      tick();
+      setInterval(tick, 1000);
+    }
+
+    let _prebookId = null;
+    function openPrebook(id, name) {
+      if (!_currentUser) {
+        window.location.href = '/login?redirect=/';
+        return;
+      }
+      _prebookId = id;
+      document.getElementById('prebook-item-name').textContent = name;
+      document.getElementById('prebook-qty').value = 1;
+      document.getElementById('prebook-modal').style.display = 'flex';
+    }
+    function closePrebook() {
+      document.getElementById('prebook-modal').style.display = 'none';
+    }
+    async function submitPrebook() {
+      const qty = parseInt(document.getElementById('prebook-qty').value) || 1;
+      const btn = document.getElementById('prebook-submit');
+      btn.disabled = true; btn.textContent = 'Booking…';
+      try {
+        const res = await fetch(`/api/preorders/${_prebookId}/book`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ quantity: qty })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          closePrebook();
+          showToast(data.message || '✨ Pre-booking confirmed!');
+          loadPreorders(); // refresh slots
+        } else {
+          showToast('❌ ' + (data.error || 'Could not pre-book.'));
+        }
+      } catch (e) { showToast('❌ Network error. Try again.'); }
+      btn.disabled = false; btn.textContent = 'Confirm Pre-booking';
     }
 
     async function loadSale() {

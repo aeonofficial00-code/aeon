@@ -78,6 +78,8 @@ function showTab(tab) {
     if (tab === 'products') loadProducts();
     if (tab === 'categories') loadCategories();
     if (tab === 'users') loadUsers();
+    if (tab === 'orders') loadAdminOrders();
+    if (tab === 'preorders') loadAdminPreorders();
 }
 
 // ══════════════════════════════════════════════
@@ -441,7 +443,7 @@ function showToast(msg) {
 }
 
 // ── Modal close on overlay click ──────────────
-['product-modal', 'cat-modal', 'delete-modal'].forEach(id => {
+['product-modal', 'cat-modal', 'delete-modal', 'po-modal'].forEach(id => {
     document.getElementById(id)?.addEventListener('click', e => { if (e.target === e.currentTarget) e.target.classList.remove('open'); });
 });
 

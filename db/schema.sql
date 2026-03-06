@@ -98,3 +98,30 @@ CREATE TABLE IF NOT EXISTS session (
   CONSTRAINT session_pkey PRIMARY KEY (sid)
 );
 CREATE INDEX IF NOT EXISTS IDX_session_expire ON session (expire);
+
+-- ── PRE-ORDER LISTINGS ───────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS preorder_listings (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name            VARCHAR(500) NOT NULL,
+  category        VARCHAR(255) NOT NULL DEFAULT '',
+  description     TEXT,
+  price           DECIMAL(10,2) NOT NULL DEFAULT 0,
+  image           TEXT,                          -- base64 data URL
+  expected_delivery VARCHAR(100),                -- e.g. "April 2026"
+  closes_at       TIMESTAMPTZ,                   -- NULL = open indefinitely
+  max_slots       INTEGER DEFAULT NULL,          -- NULL = unlimited
+  is_active       BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at      TIMESTAMPTZ DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ── PRE-BOOK REQUESTS ────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS prebook_requests (
+  id              SERIAL PRIMARY KEY,
+  listing_id      UUID NOT NULL REFERENCES preorder_listings(id) ON DELETE CASCADE,
+  user_id         INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  quantity        INTEGER NOT NULL DEFAULT 1,
+  created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_prebook_listing ON prebook_requests (listing_id);
+CREATE INDEX IF NOT EXISTS idx_prebook_user    ON prebook_requests (user_id);
