@@ -83,6 +83,7 @@ async function migrate() {
             )`,
       `CREATE INDEX IF NOT EXISTS idx_prebook_listing ON prebook_requests (listing_id)`,
       `CREATE INDEX IF NOT EXISTS idx_prebook_user ON prebook_requests (user_id)`,
+      `ALTER TABLE preorder_listings ADD COLUMN IF NOT EXISTS available_sizes JSONB DEFAULT NULL`,
     ];
     for (const sql of alterations) {
       await client.query(sql);
