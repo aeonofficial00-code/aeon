@@ -1065,10 +1065,132 @@
                         </select>
                     </td>
                     <td>
-                        <button onclick="updateOrderStatus('${o.id}')" class="btn btn-outline" style="font-size:11px;padding:6px 12px;">Update</button>
+                        <div style="display:flex;gap:6px;">
+                            <button onclick="openOrderDetail('${o.id}')" class="btn btn-outline" style="font-size:11px;padding:6px 12px;">👁 View</button>
+                            <button onclick="updateOrderStatus('${o.id}')" class="btn btn-outline" style="font-size:11px;padding:6px 12px;">Update</button>
+                        </div>
                     </td>
                 </tr>`;
             }).join('');
+        }
+
+        /* ─── ORDER DETAIL MODAL ───────────────────────────────────────────── */
+        function openOrderDetail(id) {
+            const o = allOrders.find(x => x.id === id);
+            if (!o) return;
+            const addr = o.address || {};
+            const items = o.items || [];
+            const statusColors = { paid: '#5cb85c', pending: '#f0ad4e', processing: '#5bc0de', shipped: '#c9a96e', delivered: '#5cb85c', cancelled: '#d9534f' };
+            const sc = statusColors[o.status] || '#888';
+
+            // Build items HTML
+            const itemsHtml = items.map(i => `
+                <div style="display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:1px solid rgba(201,169,110,0.06);">
+                    <img src="${i.thumb || ''}" style="width:60px;height:60px;object-fit:cover;border-radius:10px;border:1px solid rgba(201,169,110,0.15);background:#1a1a1a;flex-shrink:0;" onerror="this.style.display='none'" />
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px;">${i.name}</div>
+                        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">
+                            ${i.category ? `<span style="font-size:10px;background:rgba(255,255,255,0.06);padding:2px 8px;border-radius:20px;color:var(--text-muted);">${i.category}</span>` : ''}
+                            ${i.selectedSize ? `<span style="font-size:10px;background:rgba(201,169,110,0.12);padding:2px 8px;border-radius:20px;color:var(--gold);">Size: ${i.selectedSize}</span>` : ''}
+                            <span style="font-size:10px;background:rgba(255,255,255,0.06);padding:2px 8px;border-radius:20px;color:var(--text-muted);">Qty: ${i.qty || 1}</span>
+                        </div>
+                        <div style="font-size:13px;color:var(--gold);font-weight:600;">₹${(parseFloat(i.price) * (i.qty || 1)).toLocaleString('en-IN')} <span style="font-size:11px;font-weight:400;color:var(--text-muted);">@ ₹${parseFloat(i.price).toLocaleString('en-IN')} each</span></div>
+                    </div>
+                </div>`).join('');
+
+            // Box packaging row (if any charge in items)
+            const boxItem = items.find(i => i.isBox || i.box);
+            const boxCharge = parseFloat(o.box_charge || 0);
+            const boxLabel = o.box_label || (boxCharge > 0 ? 'Velvet Box' : 'Standard Box (Free)');
+
+            document.getElementById('order-detail-inner').innerHTML = `
+                <!-- Header -->
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:28px;">
+                    <div>
+                        <p style="font-size:9px;letter-spacing:3px;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;">Order ID</p>
+                        <p style="font-family:monospace;font-size:16px;color:var(--gold);font-weight:700;">#${o.id.toUpperCase()}</p>
+                        <p style="font-size:11px;color:var(--text-muted);margin-top:4px;">${new Date(o.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                    <span style="padding:6px 16px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+                        background:rgba(${getStatusRgb(o.status)},0.12);color:${sc};border:1px solid rgba(${getStatusRgb(o.status)},0.3);">${o.status}</span>
+                </div>
+
+                <!-- Two-col: Customer Info + Delivery Address -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+                    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(201,169,110,0.1);border-radius:14px;padding:18px;">
+                        <p style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;">Customer</p>
+                        <p style="font-weight:600;font-size:15px;color:var(--text);margin-bottom:4px;">${addr.name || '—'}</p>
+                        <p style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">📞 ${addr.phone || '—'}</p>
+                        <p style="font-size:12px;color:var(--text-muted);">✉️ ${o.guest_email || '—'}</p>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(201,169,110,0.1);border-radius:14px;padding:18px;">
+                        <p style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;">Delivery Address</p>
+                        <p style="font-size:13px;color:var(--text);line-height:1.8;">
+                            ${addr.line1 || ''}${addr.line2 ? '<br>' + addr.line2 : ''}<br>
+                            ${addr.city || ''}${addr.state ? ', ' + addr.state : ''}${addr.pincode ? ' – ' + addr.pincode : ''}<br>
+                            ${addr.country || ''}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Items -->
+                <div style="margin-bottom:24px;">
+                    <p style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;">Items (${items.length})</p>
+                    ${itemsHtml}
+                </div>
+
+                <!-- Price Summary -->
+                <div style="background:rgba(201,169,110,0.04);border:1px solid rgba(201,169,110,0.1);border-radius:14px;padding:18px;margin-bottom:24px;">
+                    <p style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:14px;">Payment Summary</p>
+                    ${[["Subtotal", o.subtotal], ["Delivery", o.delivery_charge], ["Packaging (${boxLabel})", boxCharge]]
+                    .filter(([, v]) => v != null && v !== undefined)
+                    .map(([label, val]) => `
+                        <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px;">
+                            <span style="color:var(--text-muted);">${label}</span>
+                            <span style="color:var(--text);">₹${parseFloat(val || 0).toLocaleString('en-IN')}</span>
+                        </div>`).join('')}
+                    <div style="display:flex;justify-content:space-between;padding-top:10px;border-top:1px solid rgba(201,169,110,0.15);font-size:16px;font-weight:700;">
+                        <span style="color:var(--text);">Total</span>
+                        <span style="color:var(--gold);">₹${parseFloat(o.total || 0).toLocaleString('en-IN')}</span>
+                    </div>
+                </div>
+
+                <!-- Payment IDs -->
+                ${(o.razorpay_order_id || o.razorpay_payment_id) ? `
+                <div style="margin-bottom:24px;">
+                    <p style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;">Payment Reference</p>
+                    ${o.razorpay_order_id ? `<p style="font-size:11px;color:var(--text-muted);font-family:monospace;margin-bottom:4px;">Order: ${o.razorpay_order_id}</p>` : ''}
+                    ${o.razorpay_payment_id ? `<p style="font-size:11px;color:var(--text-muted);font-family:monospace;">Payment: ${o.razorpay_payment_id}</p>` : ''}
+                </div>` : ''}
+
+                <!-- Status Change -->
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <select id="od-status-${o.id}" style="flex:1;background:rgba(${getStatusRgb(o.status)},0.08);border:1px solid rgba(${getStatusRgb(o.status)},0.3);color:${sc};border-radius:10px;padding:10px 14px;font-size:12px;letter-spacing:1px;text-transform:uppercase;outline:none;cursor:pointer;">
+                        ${['pending', 'processing', 'shipped', 'delivered', 'cancelled'].map(s => `<option value="${s}" ${s === o.status ? 'selected' : ''}>${s}</option>`).join('')}
+                    </select>
+                    <button onclick="updateOrderStatusFromDetail('${o.id}')" class="btn btn-gold" style="white-space:nowrap;">Save Status</button>
+                </div>
+            `;
+            document.getElementById('order-detail-modal').style.display = 'flex';
+        }
+
+        function closeOrderDetail() {
+            document.getElementById('order-detail-modal').style.display = 'none';
+        }
+
+        async function updateOrderStatusFromDetail(orderId) {
+            const select = document.getElementById('od-status-' + orderId);
+            const newStatus = select?.value;
+            if (!newStatus) return;
+            const res = await fetch(`/api/admin/orders/${orderId}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'x-admin-token': getToken() },
+                body: JSON.stringify({ status: newStatus })
+            });
+            if (res.ok) {
+                closeOrderDetail();
+                loadAdminOrders();
+            } else { alert('Failed to update status.'); }
         }
 
         function getStatusRgb(s) {
@@ -1411,6 +1533,41 @@
             </div>
         </div>
     </div>
+
+    <!-- ORDER DETAIL SLIDE PANEL -->
+    <div id="order-detail-modal" onclick="if(event.target===this)closeOrderDetail()" style="
+        display:none;position:fixed;inset:0;z-index:200;
+        background:rgba(0,0,0,0.72);backdrop-filter:blur(8px);
+        justify-content:flex-end;">
+        <div style="width:100%;max-width:560px;height:100vh;overflow-y:auto;
+            background:var(--dark-2);border-left:1px solid rgba(201,169,110,0.15);
+            padding:32px;box-shadow:-24px 0 80px rgba(0,0,0,0.5);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
+                <span style="font-family:var(--font-heading);font-size:20px;color:var(--gold);letter-spacing:2px;">Order
+                    Details</span>
+                <button onclick="closeOrderDetail()"
+                    style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:6px 14px;color:var(--text-muted);cursor:pointer;font-size:20px;line-height:1;">&#x2715;</button>
+            </div>
+            <div id="order-detail-inner"></div>
+        </div>
+    </div>
+    <style>
+        @keyframes slideInRight {
+            from {
+                transform: translateX(60px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        #order-detail-modal>div {
+            animation: slideInRight 0.26s cubic-bezier(.4, 0, .2, 1);
+        }
+    </style>
 </body>
 
 </html>
