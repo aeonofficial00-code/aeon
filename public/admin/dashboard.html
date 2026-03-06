@@ -1091,17 +1091,18 @@
                         <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px;">${i.name}</div>
                         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">
                             ${i.category ? `<span style="font-size:10px;background:rgba(255,255,255,0.06);padding:2px 8px;border-radius:20px;color:var(--text-muted);">${i.category}</span>` : ''}
-                            ${i.selectedSize ? `<span style="font-size:10px;background:rgba(201,169,110,0.12);padding:2px 8px;border-radius:20px;color:var(--gold);">Size: ${i.selectedSize}</span>` : ''}
+                            ${(i.selectedSize || i.size) ? `<span style="font-size:10px;background:rgba(201,169,110,0.15);padding:2px 10px;border-radius:20px;color:var(--gold);font-weight:600;">📏 Size: ${i.selectedSize || i.size}</span>` : ''}
                             <span style="font-size:10px;background:rgba(255,255,255,0.06);padding:2px 8px;border-radius:20px;color:var(--text-muted);">Qty: ${i.qty || 1}</span>
                         </div>
                         <div style="font-size:13px;color:var(--gold);font-weight:600;">₹${(parseFloat(i.price) * (i.qty || 1)).toLocaleString('en-IN')} <span style="font-size:11px;font-weight:400;color:var(--text-muted);">@ ₹${parseFloat(i.price).toLocaleString('en-IN')} each</span></div>
                     </div>
                 </div>`).join('');
 
-            // Box packaging row (if any charge in items)
-            const boxItem = items.find(i => i.isBox || i.box);
-            const boxCharge = parseFloat(o.box_charge || 0);
-            const boxLabel = o.box_label || (boxCharge > 0 ? 'Velvet Box' : 'Standard Box (Free)');
+            // Box packaging: checkout stores it as item.box on the first item or as a separate item
+            const boxItem = items.find(i => i.box);
+            const boxData = boxItem?.box || null;
+            const boxLabel = boxData?.label || '';
+            const boxCharge = parseFloat(boxData?.price || 0);
 
             document.getElementById('order-detail-inner').innerHTML = `
                 <!-- Header -->
@@ -1142,8 +1143,11 @@
                 <!-- Price Summary -->
                 <div style="background:rgba(201,169,110,0.04);border:1px solid rgba(201,169,110,0.1);border-radius:14px;padding:18px;margin-bottom:24px;">
                     <p style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:14px;">Payment Summary</p>
-                    ${[["Subtotal", o.subtotal], ["Delivery", o.delivery_charge], ["Packaging (${boxLabel})", boxCharge]]
-                    .filter(([, v]) => v != null && v !== undefined)
+                    ${([
+                    ['Subtotal', o.subtotal],
+                    ['Delivery', o.delivery_charge],
+                    ...(boxData ? [['Packaging — ' + boxLabel, boxCharge]] : [])
+                ]).filter(([, v]) => v != null)
                     .map(([label, val]) => `
                         <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px;">
                             <span style="color:var(--text-muted);">${label}</span>
