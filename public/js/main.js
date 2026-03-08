@@ -107,8 +107,8 @@ function renderCartItems() {
   const boxPrice = (_selectedBox && !allBangles) ? (_selectedBox.price || 0) : 0;
 
   const subtotal = cart.reduce((s, i) => s + parseFloat(i.price) * (i.qty || 1), 0);
-  const deliveryFree = subtotal >= 999;
-  const delivery = deliveryFree ? 0 : 99;
+  const deliveryFree = true; // site-wide free shipping
+  const delivery = 0;
   const total = subtotal + delivery + boxPrice;
 
   const totalEl = document.getElementById('cart-total');
@@ -153,9 +153,8 @@ function renderCartItems() {
           <span>Subtotal</span><span>₹${subtotal.toLocaleString('en-IN')}</span>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:4px;">
-          <span>Delivery</span><span style="color:${deliveryFree ? '#5cb85c' : 'inherit'}">${deliveryFree ? 'FREE' : '₹99'}</span>
+          <span>Delivery</span><span style="color:#5cb85c">FREE</span>
         </div>
-        ${deliveryFree ? '' : '<p style="font-size:10px;color:var(--text-muted);margin-bottom:4px;">Add ₹' + (999 - Math.round(subtotal)) + ' more for free delivery</p>'}
         ${!allBangles && _selectedBox && _selectedBox.price > 0 ? `
         <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:4px;">
           <span>Box (${_selectedBox.size})</span><span style="color:var(--gold);">+₹${_selectedBox.price}</span>

@@ -13,8 +13,8 @@ const rzp = new Razorpay({
     key_secret: process.env.RAZORPAY_KEY_SECRET || ''
 });
 
-const DELIVERY_THRESHOLD = 999;   // free delivery above ₹999
-const DELIVERY_CHARGE = 99;    // ₹99 delivery below threshold
+const DELIVERY_THRESHOLD = 0;   // site-wide free shipping
+const DELIVERY_CHARGE = 0;    // ₹0 delivery for all orders
 
 // ── POST /api/orders/create ───────────────────────────────────────────────────
 // Body: { items: [{id,name,price,qty,thumb}], address: {name,phone,line1,city,state,pincode}, email? }

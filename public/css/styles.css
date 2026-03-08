@@ -635,7 +635,12 @@ button {
 .hero-content {
   position: relative;
   z-index: 2;
-  max-width: 600px;
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .hero-eyebrow {
@@ -647,6 +652,7 @@ button {
   animation: fadeUp 1s ease 0.3s both;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 16px;
 }
 
@@ -688,6 +694,7 @@ button {
 
 .hero-cta {
   display: flex;
+  justify-content: center;
   gap: 20px;
   flex-wrap: wrap;
   animation: fadeUp 1s ease 0.9s both;
