@@ -49,6 +49,8 @@ body {
   font-size: 15px;
   line-height: 1.7;
   overflow-x: hidden;
+  width: 100vw;
+  max-width: 100%;
 }
 
 img {
@@ -1698,7 +1700,12 @@ footer {
 
   .categories-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    gap: 16px;
+  }
+  
+  .products-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
   }
 
   .footer-grid {
@@ -1728,6 +1735,12 @@ footer {
 @media (max-width: 480px) {
   .categories-grid {
     grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  
+  .products-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
   }
 
   .hero {
