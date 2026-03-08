@@ -285,7 +285,7 @@ function loadUserState() {
     currentUser = user;
     
     if (user) {
-      const firstName = user.name ? user.name.split(' ')[0] : 'Account';
+      const displayName = user.name || 'Account';
       
       // DESKTOP SLOT (Hidden on mobile via CSS)
       userSlot.style.cssText = 'display:flex;align-items:center;gap:12px;';
@@ -296,11 +296,11 @@ function loadUserState() {
             Admin
           </a>` : ''}
         <div class="nav-auth-links">
-          <span class="nav-user-name">${firstName}</span>
+          <span class="nav-user-name">${displayName}</span>
           <span class="nav-sep">·</span>
           <a href="/orders" class="nav-orders-link">Orders</a>
           <span class="nav-sep">·</span>
-          <a href="/auth/logout" class="nav-logout-link">out</a>
+          <a href="/auth/logout" class="nav-logout-link" title="Sign Out">Sign Out</a>
         </div>
       `;
 
@@ -309,7 +309,7 @@ function loadUserState() {
         mobileUserSlot.innerHTML = `
           <div style="text-align:center; margin-bottom:10px;">
             <p style="font-size:14px; color:rgba(255,255,255,0.4); letter-spacing:1px; margin-bottom:5px;">Welcome,</p>
-            <p style="font-size:24px; font-family:var(--font-heading); color:#fff; letter-spacing:2px;">${firstName}</p>
+            <p style="font-size:24px; font-family:var(--font-heading); color:#fff; letter-spacing:2px;">${displayName}</p>
           </div>
           <div style="display:flex; flex-direction:column; align-items:center; gap:25px; width:100%;">
             ${user.isAdmin ? `<a href="/admin" style="font-size:20px; color:var(--gold); text-decoration:none; letter-spacing:3px; text-transform:uppercase;">Admin Dashboard</a>` : ''}
