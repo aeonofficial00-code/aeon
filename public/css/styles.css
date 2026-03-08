@@ -1693,6 +1693,10 @@ footer {
     display: none;
   }
 
+  .nav-user-slot, .nav-admin-btn, .nav-auth-links, .nav-signin-btn {
+    display: none !important;
+  }
+
   .hero-content {
     max-width: 100%;
   }

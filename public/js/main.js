@@ -278,15 +278,20 @@ let currentUser = null;
 
 function loadUserState() {
   const userSlot = document.getElementById('nav-user-slot');
+  const mobileUserSlot = document.getElementById('mobile-user-slot');
   if (!userSlot) return;
+
   fetch('/auth/me').then(r => r.json()).then(({ user }) => {
     currentUser = user;
+    
     if (user) {
       const firstName = user.name ? user.name.split(' ')[0] : 'Account';
+      
+      // DESKTOP SLOT (Hidden on mobile via CSS)
       userSlot.style.cssText = 'display:flex;align-items:center;gap:8px;';
       userSlot.innerHTML = `
         ${user.isAdmin ? `
-          <a href="/admin" style="
+          <a href="/admin" class="nav-admin-btn" style="
             display:inline-flex;align-items:center;gap:4px;
             padding:4px 11px 4px 8px;border-radius:20px;
             background:linear-gradient(135deg,rgba(158,122,64,0.2),rgba(201,169,110,0.12));
@@ -300,7 +305,7 @@ function loadUserState() {
             <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" style="opacity:0.85"><path d="M5 16L3 5l5.5 5L12 2l3.5 8L21 5l-2 11H5z"/></svg>
             Admin
           </a>` : ''}
-        <div style="display:flex;align-items:center;gap:6px;padding:0 2px;border-left:1px solid rgba(255,255,255,0.07);padding-left:8px;">
+        <div class="nav-auth-links" style="display:flex;align-items:center;gap:6px;padding:0 2px;border-left:1px solid rgba(255,255,255,0.07);padding-left:8px;">
           <span style="font-size:11.5px;color:rgba(255,255,255,0.45);letter-spacing:0.3px;">${firstName}</span>
           <span style="color:rgba(255,255,255,0.1);font-size:10px;">·</span>
           <a href="/orders" style="
@@ -318,13 +323,26 @@ function loadUserState() {
             onmouseout="this.style.color='rgba(255,255,255,0.2)'">out</a>
         </div>
       `;
-      // Show mobile orders link
-      const mobileOrders = document.getElementById('mobile-orders-link');
-      if (mobileOrders) mobileOrders.style.display = 'block';
+
+      // MOBILE SLOT
+      if (mobileUserSlot) {
+        mobileUserSlot.innerHTML = `
+          <div style="text-align:center; margin-bottom:10px;">
+            <p style="font-size:14px; color:rgba(255,255,255,0.4); letter-spacing:1px; margin-bottom:5px;">Welcome,</p>
+            <p style="font-size:24px; font-family:var(--font-heading); color:#fff; letter-spacing:2px;">${firstName}</p>
+          </div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:25px; width:100%;">
+            ${user.isAdmin ? `<a href="/admin" style="font-size:20px; color:var(--gold); text-decoration:none; letter-spacing:3px; text-transform:uppercase;">Admin Dashboard</a>` : ''}
+            <a href="/orders" style="font-size:20px; color:#fff; text-decoration:none; letter-spacing:3px; text-transform:uppercase;">My Orders</a>
+            <a href="/auth/logout" style="font-size:18px; color:rgba(255,100,100,0.6); text-decoration:none; letter-spacing:3px; text-transform:uppercase; margin-top:20px;">Sign Out</a>
+          </div>
+        `;
+      }
     } else {
+      // GUEST STATE
       userSlot.style.cssText = 'display:flex;align-items:center;';
       userSlot.innerHTML = `
-        <a href="/login" style="
+        <a href="/login" class="nav-signin-btn" style="
           display:inline-flex;align-items:center;gap:5px;
           font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;
           color:rgba(255,255,255,0.35);text-decoration:none;
@@ -335,6 +353,12 @@ function loadUserState() {
           Sign in
         </a>
       `;
+
+      if (mobileUserSlot) {
+        mobileUserSlot.innerHTML = `
+          <a href="/login" style="font-size:24px; color:var(--gold); text-decoration:none; letter-spacing:4px; text-transform:uppercase; border:1px solid var(--gold); padding:15px 40px; border-radius:40px;">Sign In</a>
+        `;
+      }
     }
   }).catch(() => { });
 }
