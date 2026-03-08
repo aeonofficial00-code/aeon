@@ -40,6 +40,8 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
+  width: 100%;
 }
 
 body {
@@ -49,8 +51,8 @@ body {
   font-size: 15px;
   line-height: 1.7;
   overflow-x: hidden;
-  width: 100vw;
-  max-width: 100%;
+  width: 100%;
+  position: relative;
 }
 
 img {
@@ -518,6 +520,7 @@ button {
   background: radial-gradient(ellipse at 30% 50%, rgba(201, 169, 110, 0.08) 0%, transparent 65%),
     radial-gradient(ellipse at 80% 20%, rgba(201, 169, 110, 0.05) 0%, transparent 50%),
     var(--dark);
+  overflow: hidden;
 }
 
 .hero-particles {
@@ -1696,6 +1699,7 @@ footer {
 
   .hero-title {
     font-size: clamp(48px, 12vw, 80px);
+    word-break: break-word; /* Prevent long text causing horizontal scrolling */
   }
 
   .categories-grid {
@@ -1734,14 +1738,44 @@ footer {
 
 @media (max-width: 480px) {
   .categories-grid {
-    grid-template-columns: 1fr;
-    gap: 24px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
   }
   
   .products-grid {
-    grid-template-columns: 1fr;
-    gap: 24px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
   }
+  
+  .product-info {
+    padding: 8px;
+  }
+  
+  .product-name {
+    font-size: 11px;
+    margin-bottom: 4px;
+    line-height: 1.2;
+  }
+  
+  .product-price {
+    font-size: 12px;
+  }
+  
+  .btn-cart {
+    padding: 6px;
+    font-size: 9px;
+  }
+  
+  .category-name {
+    font-size: 10px;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  
+  .category-desc {
+    display: none;
+  }
+
 
   .hero {
     padding: 0 16px;
