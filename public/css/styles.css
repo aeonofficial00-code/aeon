@@ -1756,6 +1756,26 @@ footer {
     margin-bottom: 4px;
     line-height: 1.2;
   }
+
+  .card-content {
+    padding: 12px 6px;
+  }
+  
+  .card-name {
+    font-size: 10px;
+    margin-bottom: 4px;
+    word-break: break-word;
+    line-height: 1.2;
+  }
+  
+  .card-count {
+    display: none;
+  }
+  
+  .card-arrow {
+    display: none;
+  }
+
   
   .product-price {
     font-size: 12px;

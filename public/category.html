@@ -223,9 +223,9 @@
                 document.getElementById('product-count').textContent = `${subs.length} sub-collection${subs.length !== 1 ? 's' : ''}`;
 
                 // Render subcategories as collection cards
-                grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(280px, 1fr))';
+                grid.style.gridTemplateColumns = '';
                 grid.innerHTML = subs.map(s => `
-                  <div class="category-card reveal" onclick="location.href='category.html?c=${encodeURIComponent(s.name)}'" style="cursor:pointer;">
+                  <div class="category-card reveal" onclick="location.href='category.html?c=${encodeURIComponent(s.name)}'" style="cursor:pointer; position:relative; overflow:hidden; border-radius:12px; aspect-ratio:3/4;">
                     <img class="card-img" src="${s.cover || ''}" alt="${s.name}" loading="lazy" onerror="this.style.display='none'"/>
                     <div class="card-overlay"></div><div class="card-border"></div>
                     <div class="card-content">
