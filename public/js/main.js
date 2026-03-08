@@ -288,39 +288,19 @@ function loadUserState() {
       const firstName = user.name ? user.name.split(' ')[0] : 'Account';
       
       // DESKTOP SLOT (Hidden on mobile via CSS)
-      userSlot.style.cssText = 'display:flex;align-items:center;gap:8px;';
+      userSlot.style.cssText = 'display:flex;align-items:center;gap:12px;';
       userSlot.innerHTML = `
         ${user.isAdmin ? `
-          <a href="/admin" class="nav-admin-btn" style="
-            display:inline-flex;align-items:center;gap:4px;
-            padding:4px 11px 4px 8px;border-radius:20px;
-            background:linear-gradient(135deg,rgba(158,122,64,0.2),rgba(201,169,110,0.12));
-            border:1px solid rgba(201,169,110,0.35);
-            color:var(--gold);font-size:9.5px;letter-spacing:2px;
-            text-transform:uppercase;font-weight:600;text-decoration:none;
-            transition:all 0.25s;backdrop-filter:blur(6px);
-            box-shadow:0 0 12px rgba(201,169,110,0.08);"
-            onmouseover="this.style.background='rgba(201,169,110,0.18)';this.style.borderColor='rgba(201,169,110,0.6)';this.style.boxShadow='0 0 18px rgba(201,169,110,0.2)'"
-            onmouseout="this.style.background='linear-gradient(135deg,rgba(158,122,64,0.2),rgba(201,169,110,0.12))';this.style.borderColor='rgba(201,169,110,0.35)';this.style.boxShadow='0 0 12px rgba(201,169,110,0.08)'">
+          <a href="/admin" class="nav-admin-btn">
             <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" style="opacity:0.85"><path d="M5 16L3 5l5.5 5L12 2l3.5 8L21 5l-2 11H5z"/></svg>
             Admin
           </a>` : ''}
-        <div class="nav-auth-links" style="display:flex;align-items:center;gap:6px;padding:0 2px;border-left:1px solid rgba(255,255,255,0.07);padding-left:8px;">
-          <span style="font-size:11.5px;color:rgba(255,255,255,0.45);letter-spacing:0.3px;">${firstName}</span>
-          <span style="color:rgba(255,255,255,0.1);font-size:10px;">·</span>
-          <a href="/orders" style="
-            font-size:10.5px;letter-spacing:0.5px;
-            color:rgba(255,255,255,0.3);text-decoration:none;
-            transition:color 0.2s;"
-            onmouseover="this.style.color='var(--gold)'"
-            onmouseout="this.style.color='rgba(255,255,255,0.3)'">Orders</a>
-          <span style="color:rgba(255,255,255,0.1);font-size:10px;">·</span>
-          <a href="/auth/logout" style="
-            font-size:10.5px;letter-spacing:0.5px;
-            color:rgba(255,255,255,0.2);text-decoration:none;
-            transition:color 0.2s;"
-            onmouseover="this.style.color='rgba(255,100,100,0.7)'"
-            onmouseout="this.style.color='rgba(255,255,255,0.2)'">out</a>
+        <div class="nav-auth-links">
+          <span class="nav-user-name">${firstName}</span>
+          <span class="nav-sep">·</span>
+          <a href="/orders" class="nav-orders-link">Orders</a>
+          <span class="nav-sep">·</span>
+          <a href="/auth/logout" class="nav-logout-link">out</a>
         </div>
       `;
 

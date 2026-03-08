@@ -430,6 +430,75 @@ button {
   transform: scale(1);
 }
 
+/* Auth Links Styling */
+.nav-admin-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(158, 122, 64, 0.2), rgba(201, 169, 110, 0.12));
+  border: 1px solid rgba(201, 169, 110, 0.35);
+  color: var(--gold);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all var(--transition-fast);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 0 12px rgba(201,169,110,0.08);
+}
+
+.nav-admin-btn:hover {
+  background: rgba(201, 169, 110, 0.18);
+  border-color: rgba(201, 169, 110, 0.6);
+  box-shadow: 0 0 18px rgba(201, 169, 110, 0.2);
+  transform: translateY(-1px);
+}
+
+.nav-auth-links {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 15px;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nav-user-name {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.5px;
+}
+
+.nav-sep {
+  color: rgba(255, 255, 255, 0.15);
+  font-size: 12px;
+}
+
+.nav-orders-link, .nav-logout-link, .nav-signin-btn {
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+
+.nav-orders-link { color: rgba(255, 255, 255, 0.4); }
+.nav-logout-link { color: rgba(255, 255, 255, 0.25); }
+.nav-signin-btn { color: rgba(255, 255, 255, 0.4); }
+
+.nav-orders-link:hover { color: var(--gold); }
+.nav-logout-link:hover { color: rgba(255, 100, 100, 0.8); }
+.nav-signin-btn:hover { color: var(--gold); }
+
+@media (max-width: 1200px) {
+  .nav-links {
+    gap: 25px;
+  }
+}
+
+
 /* Mobile Nav Toggle */
 .hamburger {
   display: none;
