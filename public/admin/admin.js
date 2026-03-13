@@ -295,34 +295,47 @@ async function submitProduct() {
         const res = editMode && editId
             ? await apiFetch(`/api/admin/products/${editId}`, { method: 'PUT', body: JSON.stringify(body) })
             : await apiFetch('/api/admin/products', { method: 'POST', body: JSON.stringify(body) });
-        if (res && res.ok) { 
-            showToast(editMode ? '✅ Updated!' : '✅ Product added!'); 
-            
-            // Handle Push Notification Broadcast separately using the returned or edited ID
-            if (isPushOn) {
-                const prodData = await res.json();
-                const actualId = editMode ? editId : prodData.id;
+
+        if (res && res.ok) {
+            // Read body ONCE — only needed for new products to get the new ID
+            let actualId = editId;
+            if (!editMode) {
                 try {
-                    const thumbImg = productImages[0] || '';
+                    const prodData = await res.json();
+                    actualId = prodData.id;
+                } catch (_) { }
+            }
+
+            showToast(editMode ? '✅ Updated!' : '✅ Product added!');
+
+            // Send push notification broadcast if toggle is enabled
+            if (isPushOn && actualId) {
+                try {
                     const pushRes = await fetch('/api/admin/push/send', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'x-admin-token': getToken() },
-                        body: JSON.stringify({ 
-                            title: `✨ New Arrival: ${name}`, 
-                            body: `Check out our latest ${category} item for ₹${price.toLocaleString('en-IN')}. Tap to view!`, 
-                            image: thumbImg, 
-                            url: `/product.html?id=${actualId}` 
+                        body: JSON.stringify({
+                            title: `✨ New: ${name}`,
+                            body: `${category} · ₹${parseFloat(price).toLocaleString('en-IN')} — Tap to view!`,
+                            url: `/product.html?id=${actualId}`
                         })
                     });
-                    if (pushRes.ok) showToast('🔔 Push alert broadcasted!');
-                    else console.warn('Push alert failed broadcasting.');
+                    if (pushRes.ok) {
+                        const d = await pushRes.json();
+                        showToast(`🔔 ${d.message || 'Push alert sent!'}`);
+                    } else {
+                        const d = await pushRes.json().catch(() => ({}));
+                        showToast('⚠️ Push failed: ' + (d.error || 'Unknown'));
+                        console.warn('Push send failed:', d);
+                    }
                 } catch (e) {
-                    console.error('Push error:', e);
+                    console.error('Push broadcast error:', e);
+                    showToast('⚠️ Push error: ' + e.message);
                 }
             }
 
-            closeProductModal(); 
-            loadProducts(); 
+            closeProductModal();
+            loadProducts();
         }
         else { showToast('❌ Failed to save.'); }
     } catch (e) { showToast('❌ Error: ' + e.message); }
