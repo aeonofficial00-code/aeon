@@ -1,47 +1,70 @@
 /**
- * utils/mailer.js – Nodemailer email helper for AEON
- * Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM in .env
- * Works with Gmail (use App Password), Brevo, Mailgun, etc.
+ * utils/mailer.js – Resend API Email Helper
+ * Uses HTTP (Port 443) to guarantee delivery from Render Free Tier.
  */
-const nodemailer = require('nodemailer');
 
-// Helper to create a fresh transporter for a specific port
-function createTransporter(port) {
-    return nodemailer.createTransport({
-        host: process.env.SMTP_HOST || 'smtp.gmail.com',
-        port: port,
-        secure: port === 465,
-        auth: {
-            user: process.env.SMTP_USER || '',
-            pass: process.env.SMTP_PASS || ''
-        },
-        connectionTimeout: 10000 // 10s
-    });
-}
+// Resend allows testing from onboarding@resend.dev to the email address you registered with.
+const RESEND_API_KEY = process.env.RESEND_API_KEY || 're_N6mgrxcs_M6zj9barzhNkBHnoK8keknrm';
+const FROM = process.env.SMTP_FROM || `AEON Jewellery <onboarding@resend.dev>`;
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL_NOTIFY || process.env.SMTP_USER || 'aeon@gmail.com';
 
-// ── Robust wrapper that tries p465 then falls back to p587 ──────────
+// ── Send via Resend HTTP API (bypasses Render SMTP blocking) ──────────
 async function sendRawMail(mailOptions) {
-    const defaultPort = parseInt(process.env.SMTP_PORT) || 465;
-    const t1 = createTransporter(defaultPort);
-    
+    if (!RESEND_API_KEY) {
+        console.warn('Mail skipped: No Resend API key set.');
+        return;
+    }
+
+    // Convert comma-separated string to Array if needed
+    let toArray = [];
+    if (typeof mailOptions.to === 'string') {
+        toArray = mailOptions.to.split(',').map(e => e.trim()).filter(Boolean);
+    } else if (Array.isArray(mailOptions.to)) {
+        toArray = mailOptions.to;
+    }
+
+    let bccArray = [];
+    if (typeof mailOptions.bcc === 'string') {
+        bccArray = mailOptions.bcc.split(',').map(e => e.trim()).filter(Boolean);
+    } else if (Array.isArray(mailOptions.bcc)) {
+        bccArray = mailOptions.bcc;
+    }
+
+    // Ensure we have at least one recipient
+    if (toArray.length === 0 && bccArray.length === 0) return;
+
+    const payload = {
+        from: mailOptions.from || FROM,
+        to: toArray.length > 0 ? toArray : undefined,
+        bcc: bccArray.length > 0 ? bccArray : undefined,
+        subject: mailOptions.subject,
+        html: mailOptions.html,
+    };
+
     try {
-        return await t1.sendMail(mailOptions);
-    } catch (err1) {
-        console.warn(`Mail failed on port ${defaultPort}: ${err1.message}. Retrying...`);
-        // If it failed on 465, try 587 (or vice versa if they manually set 587)
-        const fallbackPort = defaultPort === 465 ? 587 : 465;
-        const t2 = createTransporter(fallbackPort);
-        try {
-            return await t2.sendMail(mailOptions);
-        } catch (err2) {
-            console.error(`Mail failed on both ports. Final error: ${err2.message}`);
-            throw err2;
+        const response = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${RESEND_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            console.error('Resend API Error:', data);
+            throw new Error(`Resend error: ${data.message || response.statusText}`);
         }
+        
+        console.log(`Email sent successfully via Resend: ${data.id}`);
+        return data;
+    } catch (err) {
+        console.error('Failed to send email:', err.message);
+        throw err;
     }
 }
-
-const FROM = process.env.SMTP_FROM || `"AEON Jewellery" <${process.env.SMTP_USER}>`;
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL_NOTIFY || process.env.SMTP_USER;
 
 // ── Send order confirmation to customer ───────────────────────────────────────
 async function sendOrderConfirmation(order) {
