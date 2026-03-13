@@ -5,17 +5,41 @@
  */
 const nodemailer = require('nodemailer');
 
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT) || 465,
-    secure: process.env.SMTP_SECURE !== 'false', // true by default (port 465)
-    auth: {
-        user: process.env.SMTP_USER || '',
-        pass: process.env.SMTP_PASS || ''
-    },
-    // Force IPv4 — Render free plan blocks outbound IPv6 SMTP
-    socketOptions: { family: 4 }
-});
+// Helper to create a fresh transporter for a specific port
+function createTransporter(port) {
+    return nodemailer.createTransport({
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port: port,
+        secure: port === 465,
+        auth: {
+            user: process.env.SMTP_USER || '',
+            pass: process.env.SMTP_PASS || ''
+        },
+        connectionTimeout: 10000, // 10s
+        socketOptions: { family: 4 } // Force IPv4 (Render free tier blocks IPv6)
+    });
+}
+
+// ── Robust wrapper that tries p465 then falls back to p587 ──────────
+async function sendRawMail(mailOptions) {
+    const defaultPort = parseInt(process.env.SMTP_PORT) || 465;
+    const t1 = createTransporter(defaultPort);
+    
+    try {
+        return await t1.sendMail(mailOptions);
+    } catch (err1) {
+        console.warn(`Mail failed on port ${defaultPort}: ${err1.message}. Retrying...`);
+        // If it failed on 465, try 587 (or vice versa if they manually set 587)
+        const fallbackPort = defaultPort === 465 ? 587 : 465;
+        const t2 = createTransporter(fallbackPort);
+        try {
+            return await t2.sendMail(mailOptions);
+        } catch (err2) {
+            console.error(`Mail failed on both ports. Final error: ${err2.message}`);
+            throw err2;
+        }
+    }
+}
 
 const FROM = process.env.SMTP_FROM || `"AEON Jewellery" <${process.env.SMTP_USER}>`;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL_NOTIFY || process.env.SMTP_USER;
@@ -74,7 +98,7 @@ async function sendOrderConfirmation(order) {
         </div>
     </div>`;
 
-    await transporter.sendMail({
+    await sendRawMail({
         from: FROM, to,
         subject: `✅ Order Confirmed – #${order.id?.slice(0, 8).toUpperCase()} | AEON Jewellery`,
         html
@@ -85,7 +109,7 @@ async function sendOrderConfirmation(order) {
 async function sendAdminOrderAlert(order) {
     if (!process.env.SMTP_USER || !process.env.SMTP_PASS || !ADMIN_EMAIL) return;
     const addr = order.address || {};
-    await transporter.sendMail({
+    await sendRawMail({
         from: FROM,
         to: ADMIN_EMAIL,
         subject: `🛒 New Order #${order.id?.slice(0, 8).toUpperCase()} – ₹${parseFloat(order.total || 0).toLocaleString('en-IN')}`,
@@ -124,7 +148,7 @@ async function sendOrderDeliveredEmail(order) {
             <p style="margin:28px 0 0;font-size:12px;color:#666;text-align:center;">Thank you for choosing AEON ✨<br/>Crafted with ♥ in India</p>
         </div>
     </div>`;
-    await transporter.sendMail({
+    await sendRawMail({
         from: FROM, to,
         subject: `✨ Delivered – Order #${order.id?.slice(0, 8).toUpperCase()} | AEON Jewellery`,
         html
@@ -154,7 +178,7 @@ async function sendNewProductEmail(users, product) {
 
     // Send to each user (BCC all for privacy)
     const bcc = users.map(u => u.email).join(',');
-    await transporter.sendMail({
+    await sendRawMail({
         from: FROM,
         to: FROM,   // send to self
         bcc,
