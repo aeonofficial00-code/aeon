@@ -268,18 +268,25 @@ async function setupPushNotifications() {
 async function subscribeToPush() {
   if (!('serviceWorker' in navigator)) return;
   try {
+    // Check browser permission explicitly first
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      showToast('Please allow notifications in browser settings.');
+      return;
+    }
+
     const reg = await navigator.serviceWorker.ready;
     let sub = await reg.pushManager.getSubscription();
     if (sub) return showToast('Already subscribed! 🔔');
 
     const res = await fetch('/api/push/vapidPublicKey');
-    if (!res.ok) throw new Error('Server configured without Push support');
+    if (!res.ok) throw new Error('Server push not configured');
     const { publicKey } = await res.json();
-    
-    // Convert VAPID key
-    const padding = '='.repeat((4 - publicKey.length % 4) % 4);
-    const base64 = (publicKey + padding).replace(/\\-/g, '+').replace(/_/g, '/');
-    const rawData = window.atob(base64);
+
+    // Correctly convert base64url VAPID key → Uint8Array
+    const base64 = publicKey.replace(/-/g, '+').replace(/_/g, '/');
+    const padding = '='.repeat((4 - base64.length % 4) % 4);
+    const rawData = window.atob(base64 + padding);
     const outputArray = new Uint8Array(rawData.length);
     for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
 
