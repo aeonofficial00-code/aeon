@@ -289,7 +289,8 @@ async function submitProduct() {
             stock: stock !== '' ? parseInt(stock) : null, stock_status,
             is_on_sale: isSaleOn,
             sale_price: sale_price_val !== '' ? parseFloat(sale_price_val) : null,
-            available_sizes: currentSizes.length ? currentSizes : null
+            available_sizes: currentSizes.length ? currentSizes : null,
+            send_push: isPushOn
         };
         const editId = document.getElementById('edit-id').value;
         const res = editMode && editId

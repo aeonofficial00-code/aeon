@@ -96,4 +96,69 @@ async function sendAdminOrderAlert(order) {
     });
 }
 
-module.exports = { sendOrderConfirmation, sendAdminOrderAlert };
+// ── Send delivered confirmation to customer ─────────────────────────────────
+async function sendOrderDeliveredEmail(order) {
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) return;
+    const to = order.address?.email || order.guest_email;
+    if (!to) return;
+    const addr = order.address || {};
+    const html = `
+    <div style="max-width:600px;margin:0 auto;background:#0A0A0A;color:#E8E0D0;font-family:Inter,sans-serif;border:1px solid #222;border-radius:12px;overflow:hidden;">
+        <div style="background:linear-gradient(135deg,#9A7840,#C9A96E);padding:28px 32px;">
+            <h1 style="margin:0;font-family:Georgia,serif;font-size:32px;letter-spacing:6px;color:#0A0A0A;">AEON</h1>
+            <p style="margin:6px 0 0;font-size:11px;letter-spacing:3px;color:rgba(0,0,0,0.6);text-transform:uppercase;">Jewellery</p>
+        </div>
+        <div style="padding:32px;">
+            <h2 style="font-family:Georgia,serif;font-size:22px;color:#C9A96E;margin:0 0 8px;">Your order has been delivered!</h2>
+            <p style="color:#888;font-size:13px;margin:0 0 24px;">Hi ${addr.name || 'valued customer'}, we hope you love your AEON jewellery. Your order has been marked as delivered.</p>
+            <div style="background:#111;border-radius:8px;padding:14px 18px;margin-bottom:24px;font-size:12px;letter-spacing:1px;">
+                <span style="color:#888;">Order ID:</span> <strong style="color:#C9A96E;">#${order.id?.slice(0, 8).toUpperCase()}</strong>
+            </div>
+            <div style="background:#111;border-radius:8px;padding:16px 18px;margin-bottom:28px;">
+                <p style="margin:0 0 6px;font-size:10px;letter-spacing:2px;color:#888;text-transform:uppercase;">Delivered To</p>
+                <p style="margin:0;color:#E8E0D0;font-size:13px;line-height:1.7;">${addr.name}<br/>${addr.line1}${addr.line2 ? ', ' + addr.line2 : ''}<br/>${addr.city}, ${addr.state} – ${addr.pincode}</p>
+            </div>
+            <p style="font-size:13px;color:#888;">We'd love to hear from you! If you have any questions or feedback, reply to this email.</p>
+            <p style="margin:28px 0 0;font-size:12px;color:#666;text-align:center;">Thank you for choosing AEON ✨<br/>Crafted with ♥ in India</p>
+        </div>
+    </div>`;
+    await transporter.sendMail({
+        from: FROM, to,
+        subject: `✨ Delivered – Order #${order.id?.slice(0, 8).toUpperCase()} | AEON Jewellery`,
+        html
+    });
+}
+
+// ── Send new product blast to all registered users ────────────────────────
+async function sendNewProductEmail(users, product) {
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) return;
+    if (!users.length) return;
+    const { name, category, price, id } = product;
+    const productUrl = `${process.env.APP_URL || ''}/product.html?id=${id}`;
+    const html = `
+    <div style="max-width:600px;margin:0 auto;background:#0A0A0A;color:#E8E0D0;font-family:Inter,sans-serif;border:1px solid #222;border-radius:12px;overflow:hidden;">
+        <div style="background:linear-gradient(135deg,#9A7840,#C9A96E);padding:28px 32px;">
+            <h1 style="margin:0;font-family:Georgia,serif;font-size:32px;letter-spacing:6px;color:#0A0A0A;">AEON</h1>
+            <p style="margin:6px 0 0;font-size:11px;letter-spacing:3px;color:rgba(0,0,0,0.6);text-transform:uppercase;">Jewellery</p>
+        </div>
+        <div style="padding:32px;">
+            <p style="font-size:11px;letter-spacing:3px;color:#C9A96E;text-transform:uppercase;margin:0 0 8px;">New Arrival</p>
+            <h2 style="font-family:Georgia,serif;font-size:26px;color:#E8E0D0;margin:0 0 6px;">${name}</h2>
+            <p style="color:#888;font-size:13px;margin:0 0 24px;">${category} &nbsp;·&nbsp; ₹${parseFloat(price).toLocaleString('en-IN')}</p>
+            <a href="${productUrl}" style="display:inline-block;background:linear-gradient(135deg,#9E7A40,#C9A96E);color:#0A0A0A;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">View Product</a>
+            <p style="margin:32px 0 0;font-size:11px;color:#444;text-align:center;">You received this because you have an account with AEON Jewellery.</p>
+        </div>
+    </div>`;
+
+    // Send to each user (BCC all for privacy)
+    const bcc = users.map(u => u.email).join(',');
+    await transporter.sendMail({
+        from: FROM,
+        to: FROM,   // send to self
+        bcc,
+        subject: `✨ New Drop: ${name} | AEON Jewellery`,
+        html
+    });
+}
+
+module.exports = { sendOrderConfirmation, sendAdminOrderAlert, sendOrderDeliveredEmail, sendNewProductEmail };

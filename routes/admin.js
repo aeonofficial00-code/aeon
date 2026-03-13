@@ -3,6 +3,7 @@ const router = express.Router();
 const crypto = require('crypto');
 const pool = require('../db/pool');
 const pushRouter = require('./push');
+const { sendOrderDeliveredEmail, sendNewProductEmail } = require('../utils/mailer');
 
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase());
 
@@ -37,10 +38,14 @@ router.patch('/orders/:id/status', auth, express.json(), async (req, res) => {
     const { status } = req.body;
     if (!allowed.includes(status)) return res.status(400).json({ error: 'Invalid status' });
     try {
-        await pool.query(
-            `UPDATE orders SET status=$1, updated_at=NOW() WHERE id=$2`,
+        const { rows } = await pool.query(
+            `UPDATE orders SET status=$1, updated_at=NOW() WHERE id=$2 RETURNING *`,
             [status, req.params.id]
         );
+        // Send 'delivered' email to customer (non-blocking)
+        if (status === 'delivered' && rows[0]) {
+            sendOrderDeliveredEmail(rows[0]).catch(e => console.warn('Delivered email error:', e.message));
+        }
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -147,7 +152,6 @@ router.get('/products', auth, async (req, res) => {
 });
 
 // ── GET /api/admin/products/:id/images ───────────────────────────────────────
-// Returns just the images array (base64) for a product
 router.get('/products/:id/images', auth, async (req, res) => {
     try {
         const { rows } = await pool.query(`SELECT images FROM products WHERE id=$1`, [req.params.id]);
@@ -156,10 +160,10 @@ router.get('/products/:id/images', auth, async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ── POST /api/admin/products – base64 JSON body ───────────────────────────────
+// ── POST /api/admin/products ─────────────────────────────────────────────────
 router.post('/products', auth, express.json({ limit: '50mb' }), async (req, res) => {
     try {
-        const { name, category, price, description, featured, images, stock, stock_status, is_on_sale, sale_price, available_sizes } = req.body;
+        const { name, category, price, description, featured, images, stock, stock_status, is_on_sale, sale_price, available_sizes, send_push } = req.body;
         if (!name || !category) return res.status(400).json({ error: 'Name and category are required' });
         const stockVal = stock !== undefined && stock !== '' ? parseInt(stock) : null;
         let finalStatus = stock_status || 'in_stock';
@@ -172,21 +176,26 @@ router.post('/products', auth, express.json({ limit: '50mb' }), async (req, res)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
             [name, category, parseFloat(price) || 0, description || '', JSON.stringify(images || []),
                 featured === true || featured === 'true',
-                stockVal,
-                finalStatus,
+                stockVal, finalStatus,
                 is_on_sale === true || is_on_sale === 'true',
                 sale_price !== undefined && sale_price !== '' ? parseFloat(sale_price) : null,
                 sizesArr]
         );
         await pool.query(`INSERT INTO categories (name) VALUES ($1) ON CONFLICT (name) DO NOTHING`, [category]);
+
+        // Send email blast to all users if requested
+        if (send_push) {
+            pool.query('SELECT email FROM users WHERE email IS NOT NULL')
+                .then(({ rows: users }) => sendNewProductEmail(users, rows[0]))
+                .catch(e => console.warn('New product email error:', e.message));
+        }
+
         res.json(rows[0]);
     } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-// ── PUT /api/admin/products/:id ───────────────────────────────────────────────
+});es |// ── PUT /api/admin/products/:id ─────────────────────────────────────────────────
 router.put('/products/:id', auth, express.json({ limit: '50mb' }), async (req, res) => {
     try {
-        const { name, category, price, description, featured, images, stock, stock_status, is_on_sale, sale_price, available_sizes } = req.body;
+        const { name, category, price, description, featured, images, stock, stock_status, is_on_sale, sale_price, available_sizes, send_push } = req.body;
         const stockVal = (stock !== undefined && stock !== '') ? parseInt(stock) : null;
         const salePriceVal = (sale_price !== undefined && sale_price !== '') ? parseFloat(sale_price) : null;
         const sizesArr = Array.isArray(available_sizes) ? available_sizes : null;
@@ -214,11 +223,17 @@ router.put('/products/:id', auth, express.json({ limit: '50mb' }), async (req, r
             featured !== undefined ? (featured === true || featured === 'true') : null,
                 stockVal, finalStatus,
             is_on_sale !== undefined ? (is_on_sale === true || is_on_sale === 'true') : false,
-                salePriceVal,
-                sizesArr,
-            req.params.id]
+                salePriceVal, sizesArr, req.params.id]
         );
         if (!rows.length) return res.status(404).json({ error: 'Not found' });
+
+        // Send email blast to all users if requested
+        if (send_push) {
+            pool.query('SELECT email FROM users WHERE email IS NOT NULL')
+                .then(({ rows: users }) => sendNewProductEmail(users, rows[0]))
+                .catch(e => console.warn('New product email error:', e.message));
+        }
+
         res.json(rows[0]);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
