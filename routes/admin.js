@@ -192,7 +192,9 @@ router.post('/products', auth, express.json({ limit: '50mb' }), async (req, res)
 
         res.json(rows[0]);
     } catch (err) { res.status(500).json({ error: err.message }); }
-});es |// ── PUT /api/admin/products/:id ─────────────────────────────────────────────────
+});
+
+// ── PUT /api/admin/products/:id ──────────────────────────────────────────────
 router.put('/products/:id', auth, express.json({ limit: '50mb' }), async (req, res) => {
     try {
         const { name, category, price, description, featured, images, stock, stock_status, is_on_sale, sale_price, available_sizes, send_push } = req.body;
