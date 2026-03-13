@@ -4,8 +4,9 @@
  */
 
 // Resend allows testing from onboarding@resend.dev to the email address you registered with.
-const RESEND_API_KEY = process.env.RESEND_API_KEY || 're_N6mgrxcs_M6zj9barzhNkBHnoK8keknrm';
-const FROM = process.env.SMTP_FROM || `AEON Jewellery <onboarding@resend.dev>`;
+const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
+// MUST be exactly onboarding@resend.dev until a custom domain is purchased and verified
+const FROM = `AEON Jewellery <onboarding@resend.dev>`;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL_NOTIFY || process.env.SMTP_USER || 'aeon@gmail.com';
 
 // ── Send via Resend HTTP API (bypasses Render SMTP blocking) ──────────
