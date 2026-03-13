@@ -143,6 +143,7 @@ function openAddProductModal() {
     isSaleOn = false; updateSaleToggle();
     populateCategorySelect();
     isFeatured = false; updateToggle();
+    isPushOn = false; updatePushToggle();
     document.getElementById('product-modal').classList.add('open');
 }
 
@@ -174,6 +175,7 @@ async function openEditProductModal(id) {
     document.getElementById('p-sale-price').value = p.sale_price ?? '';
     isSaleOn = p.is_on_sale || false; updateSaleToggle();
     isFeatured = p.featured || false; updateToggle();
+    isPushOn = false; updatePushToggle();
     populateCategorySelect(p.category);
     // Load sizes
     currentSizes = Array.isArray(p.available_sizes) ? [...p.available_sizes] : [];
@@ -209,6 +211,16 @@ function updateSaleToggle() {
     if (!t) return;
     if (isSaleOn) { t.classList.add('on'); l.textContent = 'On Sale 🔥'; l.style.color = '#e07070'; }
     else { t.classList.remove('on'); l.textContent = 'Not on sale'; l.style.color = ''; }
+}
+
+let isPushOn = false;
+function togglePush() { isPushOn = !isPushOn; updatePushToggle(); }
+function updatePushToggle() {
+    const t = document.getElementById('push-toggle'), l = document.getElementById('push-label');
+    if (!t) return;
+    if (isPushOn) { t.classList.add('on'); l.textContent = 'Send push alert'; l.style.color = '#5cb85c'; }
+    else { t.classList.remove('on'); l.textContent = 'Do not send push alert'; l.style.color = 'var(--text)'; }
+    document.getElementById('p-send-push').value = isPushOn.toString();
 }
 
 // ── SIZE PICKER ───────────────────────────────
@@ -283,7 +295,35 @@ async function submitProduct() {
         const res = editMode && editId
             ? await apiFetch(`/api/admin/products/${editId}`, { method: 'PUT', body: JSON.stringify(body) })
             : await apiFetch('/api/admin/products', { method: 'POST', body: JSON.stringify(body) });
-        if (res && res.ok) { showToast(editMode ? '✅ Updated!' : '✅ Product added!'); closeProductModal(); loadProducts(); }
+        if (res && res.ok) { 
+            showToast(editMode ? '✅ Updated!' : '✅ Product added!'); 
+            
+            // Handle Push Notification Broadcast separately using the returned or edited ID
+            if (isPushOn) {
+                const prodData = await res.json();
+                const actualId = editMode ? editId : prodData.id;
+                try {
+                    const thumbImg = productImages[0] || '';
+                    const pushRes = await fetch('/api/admin/push/send', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'x-admin-token': getToken() },
+                        body: JSON.stringify({ 
+                            title: `✨ New Arrival: ${name}`, 
+                            body: `Check out our latest ${category} item for ₹${price.toLocaleString('en-IN')}. Tap to view!`, 
+                            image: thumbImg, 
+                            url: `/product.html?id=${actualId}` 
+                        })
+                    });
+                    if (pushRes.ok) showToast('🔔 Push alert broadcasted!');
+                    else console.warn('Push alert failed broadcasting.');
+                } catch (e) {
+                    console.error('Push error:', e);
+                }
+            }
+
+            closeProductModal(); 
+            loadProducts(); 
+        }
         else { showToast('❌ Failed to save.'); }
     } catch (e) { showToast('❌ Error: ' + e.message); }
     finally { btn.disabled = false; btn.textContent = 'Save Product'; }

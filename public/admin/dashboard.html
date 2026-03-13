@@ -851,6 +851,7 @@
             <form id="product-form" onsubmit="return false;">
                 <input type="hidden" id="edit-id" />
                 <input type="hidden" id="p-featured" value="false" />
+                <input type="hidden" id="p-send-push" value="false" />
                 <div class="form-group"><label>Product Name *</label><input type="text" id="p-name"
                         placeholder="e.g. AEON Royal Bangle" required /></div>
                 <div class="form-row">
@@ -933,6 +934,15 @@
                             onchange="handleImageFiles(this.files)" />
                     </div>
                     <div id="img-previews"></div>
+                </div>
+                <div class="featured-row" style="margin-top:20px;padding-top:14px;border-top:1px dashed rgba(201,169,110,0.2);">
+                    <div class="toggle-track" id="push-toggle" onclick="togglePush()">
+                        <div class="toggle-thumb"></div>
+                    </div>
+                    <div>
+                        <span class="toggle-label" id="push-label" style="display:block;margin-bottom:2px;color:var(--text);font-weight:500;">Do not send push alert</span>
+                        <span style="font-size:10px;color:var(--text-muted);">Toggle to broadcast an alert to all subscribers when saving.</span>
+                    </div>
                 </div>
             </form>
             <div class="modal-footer">
@@ -1459,6 +1469,7 @@
             };
             reader.readAsDataURL(file);
         }
+
     </script>
 
     <!-- PRE-ORDER ADMIN MODAL -->

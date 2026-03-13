@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 const pool = require('../db/pool');
+const pushRouter = require('./push');
 
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase());
 
@@ -251,6 +252,20 @@ router.get('/users', auth, async (req, res) => {
         const { rows } = await pool.query(`SELECT id, email, name, role, created_at FROM users ORDER BY created_at DESC`);
         res.json(rows);
     } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── POST /api/admin/push/send ─────────────────────────────────────────────────
+router.post('/push/send', auth, express.json(), async (req, res) => {
+    try {
+        const payload = req.body;
+        if (!payload.title || !payload.body) {
+            return res.status(400).json({ error: 'Title and body are required' });
+        }
+        const successCount = await pushRouter.broadcast(payload);
+        res.json({ message: `Push sent successfully to ${successCount} devices`, count: successCount });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 module.exports = router;

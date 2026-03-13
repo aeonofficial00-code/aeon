@@ -252,6 +252,56 @@ function renderProductCard(p) {
   `;
 }
 
+// ── PUSH NOTIFICATIONS ──────────────────────────────
+async function setupPushNotifications() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  try {
+    const reg = await navigator.serviceWorker.register('/sw.js');
+    const sub = await reg.pushManager.getSubscription();
+    // If already subscribed, hide buttons
+    if (sub) {
+      setTimeout(() => document.querySelectorAll('.push-subscribe-btn').forEach(el => el.style.display = 'none'), 500);
+    }
+  } catch (e) { console.warn('SW error:', e); }
+}
+
+async function subscribeToPush() {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (sub) return showToast('Already subscribed! 🔔');
+
+    const res = await fetch('/api/push/vapidPublicKey');
+    if (!res.ok) throw new Error('Server configured without Push support');
+    const { publicKey } = await res.json();
+    
+    // Convert VAPID key
+    const padding = '='.repeat((4 - publicKey.length % 4) % 4);
+    const base64 = (publicKey + padding).replace(/\\-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+
+    sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: outputArray
+    });
+
+    await fetch('/api/push/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(sub)
+    });
+    
+    showToast('Alerts enabled! 🔔');
+    document.querySelectorAll('.push-subscribe-btn').forEach(el => el.style.display = 'none');
+  } catch (e) {
+    console.error('Subscribe error:', e);
+    showToast('Notification permission denied.');
+  }
+}
+
 // ── NAV ───────────────────────────────────────────
 function setupNav() {
   const navbar = document.getElementById('navbar');
@@ -295,6 +345,8 @@ function loadUserState() {
             Admin
           </a>` : ''}
         <div class="nav-auth-links">
+          <button class="push-subscribe-btn" onclick="subscribeToPush()" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:4px;">🔔 Alerts</button>
+          <span class="nav-sep push-subscribe-btn">·</span>
           <span class="nav-user-name">${displayName}</span>
           <span class="nav-sep">·</span>
           <a href="/orders" class="nav-orders-link">Orders</a>
@@ -311,6 +363,7 @@ function loadUserState() {
             <p style="font-size:24px; font-family:var(--font-heading); color:#fff; letter-spacing:2px;">${displayName}</p>
           </div>
           <div style="display:flex; flex-direction:column; align-items:center; gap:25px; width:100%;">
+            <button class="push-subscribe-btn" onclick="subscribeToPush()" style="font-size:16px; color:var(--gold); border:1px solid var(--gold); border-radius:20px; padding:10px 20px; background:rgba(201,169,110,0.1); cursor:pointer;">🔔 Enable Drop Alerts</button>
             ${user.isAdmin ? `<a href="/admin" style="font-size:20px; color:var(--gold); text-decoration:none; letter-spacing:3px; text-transform:uppercase;">Admin Dashboard</a>` : ''}
             <a href="/orders" style="font-size:20px; color:#fff; text-decoration:none; letter-spacing:3px; text-transform:uppercase;">My Orders</a>
             <a href="/auth/logout" style="font-size:18px; color:rgba(255,100,100,0.6); text-decoration:none; letter-spacing:3px; text-transform:uppercase; margin-top:20px;">Sign Out</a>
@@ -325,16 +378,18 @@ function loadUserState() {
           display:inline-flex;align-items:center;gap:5px;
           font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;
           color:rgba(255,255,255,0.35);text-decoration:none;
-          transition:color 0.2s;padding:0 2px;"
+          transition:color 0.2s;padding:0 2px;margin-left:12px;"
           onmouseover="this.style.color='var(--gold)'"
           onmouseout="this.style.color='rgba(255,255,255,0.35)'">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           Sign in
         </a>
+        <button class="push-subscribe-btn" onclick="subscribeToPush()" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:12px;margin-left:15px;" title="Enable Push Alerts">🔔</button>
       `;
 
       if (mobileUserSlot) {
         mobileUserSlot.innerHTML = `
+          <button class="push-subscribe-btn" onclick="subscribeToPush()" style="font-size:14px; color:var(--gold); text-decoration:none; letter-spacing:2px; text-transform:uppercase; border:1px solid var(--gold); padding:10px 20px; border-radius:30px; margin-bottom: 15px; background:transparent;">🔔 Enable Alerts</button>
           <a href="/login" style="font-size:24px; color:var(--gold); text-decoration:none; letter-spacing:4px; text-transform:uppercase; border:1px solid var(--gold); padding:15px 40px; border-radius:40px;">Sign In</a>
         `;
       }
@@ -415,4 +470,5 @@ document.addEventListener('DOMContentLoaded', () => {
   setupNav();
   setupMobileMenu();
   updateCartUI();
+  setupPushNotifications();
 });
