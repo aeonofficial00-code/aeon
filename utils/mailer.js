@@ -7,12 +7,14 @@ const nodemailer = require('nodemailer');
 
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT) || 587,
-    secure: process.env.SMTP_SECURE === 'true',
+    port: parseInt(process.env.SMTP_PORT) || 465,
+    secure: process.env.SMTP_SECURE !== 'false', // true by default (port 465)
     auth: {
         user: process.env.SMTP_USER || '',
         pass: process.env.SMTP_PASS || ''
-    }
+    },
+    // Force IPv4 — Render free plan blocks outbound IPv6 SMTP
+    socketOptions: { family: 4 }
 });
 
 const FROM = process.env.SMTP_FROM || `"AEON Jewellery" <${process.env.SMTP_USER}>`;
