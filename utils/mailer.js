@@ -15,9 +15,7 @@ function createTransporter(port) {
             user: process.env.SMTP_USER || '',
             pass: process.env.SMTP_PASS || ''
         },
-        connectionTimeout: 10000, // 10s
-        family: 4,               // Force IPv4 (Render free tier blocks IPv6)
-        localAddress: '0.0.0.0'  // Also bind to IPv4 local address just in case
+        connectionTimeout: 10000 // 10s
     });
 }
 
