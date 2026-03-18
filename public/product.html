@@ -251,21 +251,6 @@
       <div class="divider-h"></div>
       <p class="detail-desc">${p.description || ''}</p>
 
-      ${Array.isArray(p.available_colors) && p.available_colors.length ? `
-      <div style="margin:20px 0;">
-        <p style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;">Select Color</p>
-        <div style="display:flex;flex-wrap:wrap;gap:10px;" id="color-picker">
-          ${p.available_colors.map(c => `
-            <button class="color-chip" onclick="selectColor('${c}', this)"
-              style="padding:8px 18px;background:transparent;border:1px solid rgba(201,169,110,0.3);border-radius:8px;color:var(--text);font-size:13px;cursor:pointer;transition:all 0.2s;font-family:var(--font-body);"
-              onmouseover="if(!this.classList.contains('color-active'))this.style.borderColor='var(--gold)'"
-              onmouseout="if(!this.classList.contains('color-active'))this.style.borderColor='rgba(201,169,110,0.3)'"
-            >${c}</button>`).join('')}
-        </div>
-        <p id="color-error" style="display:none;color:#d9534f;font-size:12px;margin-top:8px;">⚠ Please select a color before adding to cart</p>
-      </div>
-      ` : ''}
-
       ${Array.isArray(p.available_sizes) && p.available_sizes.length ? `
       <div style="margin:20px 0;">
         <p style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;">Select Size</p>
@@ -287,7 +272,7 @@
             Sold Out
           </button>
         ` : `
-          <button class="btn btn-gold" onclick='addToCartDirect(${JSON.stringify({ id: p.id, name: p.name, category: p.category, price: p.is_on_sale && p.sale_price ? p.sale_price : p.price, thumb: imgSrc, hasSizes: !!(Array.isArray(p.available_sizes) && p.available_sizes.length), hasColors: !!(Array.isArray(p.available_colors) && p.available_colors.length) }).replace(/"/g, '&quot;')})'>
+          <button class="btn btn-gold" onclick='addToCartDirect(${JSON.stringify({ id: p.id, name: p.name, category: p.category, price: p.is_on_sale && p.sale_price ? p.sale_price : p.price, thumb: imgSrc, hasSizes: !!(Array.isArray(p.available_sizes) && p.available_sizes.length) }).replace(/"/g, '&quot;')})'>
             <i data-lucide="shopping-bag" style="width:16px;height:16px;"></i> Add to Cart
           </button>
         `}
@@ -320,26 +305,8 @@
                 document.getElementById('main-img-wrap').onclick = () => openLightbox(src);
             };
 
-            // ── Color and Size picker ─────────────────────────────────────
+            // ── Size picker ────────────────────────────────────────────────
             let _selectedSize = null;
-            let _selectedColor = null;
-
-            window.selectColor = (color, btn) => {
-                _selectedColor = color;
-                document.querySelectorAll('.color-chip').forEach(b => {
-                    b.classList.remove('color-active');
-                    b.style.background = 'transparent';
-                    b.style.borderColor = 'rgba(201,169,110,0.3)';
-                    b.style.color = 'var(--text)';
-                });
-                btn.classList.add('color-active');
-                btn.style.background = 'rgba(201,169,110,0.18)';
-                btn.style.borderColor = 'var(--gold)';
-                btn.style.color = 'var(--gold)';
-                const err = document.getElementById('color-error');
-                if (err) err.style.display = 'none';
-            };
-
             window.selectSize = (size, btn) => {
                 _selectedSize = size;
                 document.querySelectorAll('.size-chip').forEach(b => {
@@ -357,27 +324,15 @@
             };
 
             window.addToCartDirect = (prod) => {
-                let hasError = false;
-                if (prod.hasColors && !_selectedColor) {
-                    const err = document.getElementById('color-error');
-                    if (err) err.style.display = 'block';
-                    hasError = true;
-                }
                 if (prod.hasSizes && !_selectedSize) {
                     const err = document.getElementById('size-error');
                     if (err) err.style.display = 'block';
-                    hasError = true;
-                }
-                if (hasError) {
-                    showToast('Please select all options first', 'error');
+                    showToast('Please select a size first', 'error');
                     return;
                 }
-
                 const cartItem = { ...prod };
                 if (_selectedSize) cartItem.selectedSize = _selectedSize;
-                if (_selectedColor) cartItem.selectedColor = _selectedColor;
                 delete cartItem.hasSizes;
-                delete cartItem.hasColors;
                 addToCart(cartItem);
                 openCart();
             };

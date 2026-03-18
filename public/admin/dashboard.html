@@ -926,30 +926,6 @@
                     <div id="size-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;min-height:28px;">
                     </div>
                 </div>
-                <div class="form-group" style="margin-bottom:16px;">
-                    <label>Available Colors <span style="color:var(--text-muted);font-size:10px;">(leave empty if not
-                            color-specific)</span></label>
-                    <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
-                        <span style="font-size:11px;letter-spacing:1px;color:var(--text-muted);align-self:center;">Quick
-                            add:</span>
-                        <button type="button" onclick="addColorPreset(['Gold','Silver','Rose Gold'])"
-                            style="padding:4px 10px;font-size:11px;background:rgba(201,169,110,0.1);border:1px solid rgba(201,169,110,0.25);border-radius:6px;color:var(--gold);cursor:pointer;">Classic Trio</button>
-                        <button type="button" onclick="addColorPreset(['White','Black','Red','Green','Blue'])"
-                            style="padding:4px 10px;font-size:11px;background:rgba(201,169,110,0.1);border:1px solid rgba(201,169,110,0.25);border-radius:6px;color:var(--gold);cursor:pointer;">Standard</button>
-                        <button type="button" onclick="clearColors()"
-                            style="padding:4px 10px;font-size:11px;background:rgba(217,83,79,0.1);border:1px solid rgba(217,83,79,0.3);border-radius:6px;color:#d9534f;cursor:pointer;">Clear
-                            All</button>
-                    </div>
-                    <div style="display:flex;gap:8px;">
-                        <input type="text" id="color-input" placeholder="Type a color (e.g. Gold) then press Enter"
-                            style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(201,169,110,0.2);border-radius:8px;padding:10px 12px;color:#fff;font-size:13px;font-family:var(--font-body);outline:none;"
-                            onkeydown="if(event.key==='Enter'){event.preventDefault();addColorFromInput();}" />
-                        <button type="button" onclick="addColorFromInput()"
-                            style="padding:10px 16px;background:rgba(201,169,110,0.1);border:1px solid rgba(201,169,110,0.25);border-radius:8px;color:var(--gold);font-size:12px;font-weight:600;cursor:pointer;">Add</button>
-                    </div>
-                    <div id="color-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;min-height:28px;">
-                    </div>
-                </div>
                 <div class="form-group">
                     <label>Product Images</label>
                     <div class="file-drop" id="file-drop" onclick="document.getElementById('p-images').click()">
@@ -1125,7 +1101,6 @@
                         <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px;">${i.name}</div>
                         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">
                             ${i.category ? `<span style="font-size:10px;background:rgba(255,255,255,0.06);padding:2px 8px;border-radius:20px;color:var(--text-muted);">${i.category}</span>` : ''}
-                            ${i.selectedColor ? `<span style="font-size:10px;background:rgba(201,169,110,0.15);padding:2px 10px;border-radius:20px;color:var(--gold);font-weight:600;">🎨 Color: ${i.selectedColor}</span>` : ''}
                             ${(i.selectedSize || i.size) ? `<span style="font-size:10px;background:rgba(201,169,110,0.15);padding:2px 10px;border-radius:20px;color:var(--gold);font-weight:600;">📏 Size: ${i.selectedSize || i.size}</span>` : ''}
                             <span style="font-size:10px;background:rgba(255,255,255,0.06);padding:2px 8px;border-radius:20px;color:var(--text-muted);">Qty: ${i.qty || 1}</span>
                         </div>

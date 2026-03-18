@@ -144,7 +144,6 @@ function openAddProductModal() {
     populateCategorySelect();
     isFeatured = false; updateToggle();
     isPushOn = false; updatePushToggle();
-    currentColors = []; renderColorChips();
     document.getElementById('product-modal').classList.add('open');
 }
 
@@ -181,10 +180,6 @@ async function openEditProductModal(id) {
     // Load sizes
     currentSizes = Array.isArray(p.available_sizes) ? [...p.available_sizes] : [];
     renderSizeChips();
-    // Load colors
-    currentColors = Array.isArray(p.available_colors) ? [...p.available_colors] : [];
-    renderColorChips();
-
     renderImagePreviews();
     document.getElementById('product-modal').classList.add('open');
 }
@@ -199,8 +194,6 @@ function closeProductModal() {
     document.getElementById('product-modal').classList.remove('open');
     currentSizes = [];
     renderSizeChips();
-    currentColors = [];
-    renderColorChips();
 }
 
 function toggleFeatured() { isFeatured = !isFeatured; updateToggle(); }
@@ -255,31 +248,6 @@ function addSizePreset(sizes) {
 }
 function clearSizes() { currentSizes = []; renderSizeChips(); }
 
-// ── COLOR PICKER ──────────────────────────────
-let currentColors = [];
-function renderColorChips() {
-    const el = document.getElementById('color-chips');
-    if (!el) return;
-    el.innerHTML = currentColors.map((c, i) =>
-        `<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(201,169,110,0.12);border:1px solid rgba(201,169,110,0.3);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--gold);">
-            ${c}
-            <span onclick="currentColors.splice(${i},1);renderColorChips();" style="cursor:pointer;opacity:0.6;font-size:11px;">✕</span>
-         </span>`
-    ).join('');
-}
-function addColorFromInput() {
-    const inp = document.getElementById('color-input');
-    const val = (inp?.value || '').trim();
-    if (!val) return;
-    if (!currentColors.includes(val)) { currentColors.push(val); renderColorChips(); }
-    inp.value = '';
-}
-function addColorPreset(colors) {
-    colors.forEach(c => { if (!currentColors.includes(c)) currentColors.push(c); });
-    renderColorChips();
-}
-function clearColors() { currentColors = []; renderColorChips(); }
-
 // Image upload → base64
 function handleImageFiles(files) {
     const promises = Array.from(files).map(f => new Promise(res => {
@@ -321,8 +289,7 @@ async function submitProduct() {
             stock: stock !== '' ? parseInt(stock) : null, stock_status,
             is_on_sale: isSaleOn,
             sale_price: sale_price_val !== '' ? parseFloat(sale_price_val) : null,
-            available_sizes: currentSizes.length ? currentSizes : null,
-            available_colors: currentColors.length ? currentColors : null
+            available_sizes: currentSizes.length ? currentSizes : null
         };
         const editId = document.getElementById('edit-id').value;
         const res = editMode && editId
