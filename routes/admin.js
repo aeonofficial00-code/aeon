@@ -191,6 +191,7 @@ router.put('/products/:id', auth, express.json({ limit: '50mb' }), async (req, r
         const stockVal = (stock !== undefined && stock !== '') ? parseInt(stock) : null;
         const salePriceVal = (sale_price !== undefined && sale_price !== '') ? parseFloat(sale_price) : null;
         const sizesArr = Array.isArray(available_sizes) ? available_sizes : null;
+        const colorsArr = Array.isArray(available_colors) ? available_colors : null;
         let finalStatus = stock_status || null;
         if (stockVal === 0) finalStatus = 'out_of_stock';
         else if (stockVal > 0 && finalStatus === 'out_of_stock') finalStatus = 'in_stock';
@@ -207,8 +208,8 @@ router.put('/products/:id', auth, express.json({ limit: '50mb' }), async (req, r
         stock_status = COALESCE($8, stock_status),
         is_on_sale  = $9,
         sale_price  = COALESCE($10, sale_price),
-        available_sizes = COALESCE($11, available_sizes),
-        available_colors = COALESCE($12, available_colors),
+        available_sizes = $11,
+        available_colors = $12,
         updated_at  = NOW()
        WHERE id = $13 RETURNING *`,
             [name || null, category || null, price ? parseFloat(price) : null, description || null,
