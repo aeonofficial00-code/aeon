@@ -10,7 +10,7 @@ function sendBase64Image(res, data) {
     const mime = meta.split(';')[0];
     const buf = Buffer.from(data.substring(comma + 1), 'base64');
     res.set('Content-Type', mime)
-        .set('Cache-Control', 'public, max-age=86400')
+        .set('Cache-Control', 'public, max-age=2592000, immutable')
         .send(buf);
 }
 

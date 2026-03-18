@@ -279,14 +279,44 @@ function addColorPreset(colors) {
 }
 function clearColors() { currentColors = []; renderColorChips(); }
 
-// Image upload → base64
-function handleImageFiles(files) {
-    const promises = Array.from(files).map(f => new Promise(res => {
-        const r = new FileReader(); r.onload = e => res(e.target.result); r.readAsDataURL(f);
-    }));
-    Promise.all(promises).then(dataUrls => {
-        productImages = [...productImages, ...dataUrls];
-        renderImagePreviews();
+// Image upload → base64 with compression
+async function handleImageFiles(files) {
+    const compressed = [];
+    for (const file of files) {
+        try {
+            const dataUrl = await new Promise(res => {
+                const r = new FileReader(); r.onload = e => res(e.target.result); r.readAsDataURL(file);
+            });
+            const compressedUrl = await compressImage(dataUrl, 1000, 0.6);
+            compressed.push(compressedUrl);
+        } catch (e) { console.error('Compression failed', e); }
+    }
+    productImages = [...productImages, ...compressed];
+    renderImagePreviews();
+}
+
+function compressImage(dataUrl, maxWidth, quality) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.src = dataUrl;
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+
+            if (width > maxWidth) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            // Convert to JPEG with specified quality
+            resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = reject;
     });
 }
 
