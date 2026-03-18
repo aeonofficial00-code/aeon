@@ -38,7 +38,6 @@ CREATE TABLE IF NOT EXISTS products (
   is_on_sale      BOOLEAN NOT NULL DEFAULT FALSE,
   sale_price      DECIMAL(10,2),
   available_sizes TEXT[],                          -- e.g. {'2.4','2.6','18inch'}
-  available_colors JSONB,                         -- e.g. ["Gold","Silver"]
   created_at      TIMESTAMPTZ DEFAULT NOW(),
   updated_at      TIMESTAMPTZ DEFAULT NOW()
 );
