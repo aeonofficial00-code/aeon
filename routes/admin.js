@@ -178,7 +178,7 @@ router.post('/products', auth, express.json({ limit: '50mb' }), async (req, res)
                 is_on_sale === true || is_on_sale === 'true',
                 sale_price !== undefined && sale_price !== '' ? parseFloat(sale_price) : null,
                 sizesArr,
-                colorsArr]
+                colorsArr ? JSON.stringify(colorsArr) : null]
         );
         await pool.query(`INSERT INTO categories (name) VALUES ($1) ON CONFLICT (name) DO NOTHING`, [category]);
         res.json(rows[0]);
@@ -220,7 +220,7 @@ router.put('/products/:id', auth, express.json({ limit: '50mb' }), async (req, r
             is_on_sale !== undefined ? (is_on_sale === true || is_on_sale === 'true') : false,
                 salePriceVal,
                 sizesArr,
-                colorsArr,
+                colorsArr ? JSON.stringify(colorsArr) : null,
             req.params.id]
         );
         if (!rows.length) return res.status(404).json({ error: 'Not found' });
