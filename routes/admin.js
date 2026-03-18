@@ -141,7 +141,7 @@ router.delete('/categories/:id', auth, async (req, res) => {
 // ── GET /api/admin/products ───────────────────────────────────────────────────
 router.get('/products', auth, async (req, res) => {
     try {
-        const { rows } = await pool.query(`SELECT id, name, category, price, description, featured, stock, stock_status, is_on_sale, sale_price, available_sizes, created_at FROM products ORDER BY created_at DESC`);
+        const { rows } = await pool.query(`SELECT id, name, category, price, description, featured, stock, stock_status, is_on_sale, sale_price, available_sizes, available_colors, created_at FROM products ORDER BY created_at DESC`);
         res.json(rows);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -159,7 +159,7 @@ router.get('/products/:id/images', auth, async (req, res) => {
 // ── POST /api/admin/products – base64 JSON body ───────────────────────────────
 router.post('/products', auth, express.json({ limit: '50mb' }), async (req, res) => {
     try {
-        const { name, category, price, description, featured, images, stock, stock_status, is_on_sale, sale_price, available_sizes } = req.body;
+        const { name, category, price, description, featured, images, stock, stock_status, is_on_sale, sale_price, available_sizes, available_colors } = req.body;
         if (!name || !category) return res.status(400).json({ error: 'Name and category are required' });
         const stockVal = stock !== undefined && stock !== '' ? parseInt(stock) : null;
         let finalStatus = stock_status || 'in_stock';
@@ -167,16 +167,18 @@ router.post('/products', auth, express.json({ limit: '50mb' }), async (req, res)
         else if (stockVal > 0 && finalStatus === 'out_of_stock') finalStatus = 'in_stock';
 
         const sizesArr = Array.isArray(available_sizes) && available_sizes.length ? available_sizes : null;
+        const colorsArr = Array.isArray(available_colors) && available_colors.length ? available_colors : null;
         const { rows } = await pool.query(
-            `INSERT INTO products (name, category, price, description, images, featured, stock, stock_status, is_on_sale, sale_price, available_sizes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
+            `INSERT INTO products (name, category, price, description, images, featured, stock, stock_status, is_on_sale, sale_price, available_sizes, available_colors)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
             [name, category, parseFloat(price) || 0, description || '', JSON.stringify(images || []),
                 featured === true || featured === 'true',
                 stockVal,
                 finalStatus,
                 is_on_sale === true || is_on_sale === 'true',
                 sale_price !== undefined && sale_price !== '' ? parseFloat(sale_price) : null,
-                sizesArr]
+                sizesArr,
+                colorsArr]
         );
         await pool.query(`INSERT INTO categories (name) VALUES ($1) ON CONFLICT (name) DO NOTHING`, [category]);
         res.json(rows[0]);
@@ -186,10 +188,11 @@ router.post('/products', auth, express.json({ limit: '50mb' }), async (req, res)
 // ── PUT /api/admin/products/:id ───────────────────────────────────────────────
 router.put('/products/:id', auth, express.json({ limit: '50mb' }), async (req, res) => {
     try {
-        const { name, category, price, description, featured, images, stock, stock_status, is_on_sale, sale_price, available_sizes } = req.body;
+        const { name, category, price, description, featured, images, stock, stock_status, is_on_sale, sale_price, available_sizes, available_colors } = req.body;
         const stockVal = (stock !== undefined && stock !== '') ? parseInt(stock) : null;
         const salePriceVal = (sale_price !== undefined && sale_price !== '') ? parseFloat(sale_price) : null;
         const sizesArr = Array.isArray(available_sizes) ? available_sizes : null;
+        const colorsArr = Array.isArray(available_colors) ? available_colors : null;
         let finalStatus = stock_status || null;
         if (stockVal === 0) finalStatus = 'out_of_stock';
         else if (stockVal > 0 && finalStatus === 'out_of_stock') finalStatus = 'in_stock';
@@ -207,8 +210,9 @@ router.put('/products/:id', auth, express.json({ limit: '50mb' }), async (req, r
         is_on_sale  = $9,
         sale_price  = $10,
         available_sizes = COALESCE($11, available_sizes),
+        available_colors = COALESCE($12, available_colors),
         updated_at  = NOW()
-       WHERE id = $12 RETURNING *`,
+       WHERE id = $13 RETURNING *`,
             [name || null, category || null, price ? parseFloat(price) : null, description || null,
             images ? JSON.stringify(images) : null,
             featured !== undefined ? (featured === true || featured === 'true') : null,
@@ -216,6 +220,7 @@ router.put('/products/:id', auth, express.json({ limit: '50mb' }), async (req, r
             is_on_sale !== undefined ? (is_on_sale === true || is_on_sale === 'true') : false,
                 salePriceVal,
                 sizesArr,
+                colorsArr,
             req.params.id]
         );
         if (!rows.length) return res.status(404).json({ error: 'Not found' });

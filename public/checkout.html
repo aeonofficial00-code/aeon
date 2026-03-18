@@ -510,7 +510,10 @@
           <div class="order-item-info">
             <div class="order-item-name">${item.name}</div>
             <div class="order-item-cat">${item.category}</div>
-            ${item.selectedSize ? `<div style="font-size:10px;color:var(--gold);letter-spacing:1px;text-transform:uppercase;margin-top:2px;">Size: ${item.selectedSize}</div>` : ''}
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:2px;">
+              ${item.selectedColor ? `<div style="font-size:10px;color:var(--gold);letter-spacing:1px;text-transform:uppercase;">Color: ${item.selectedColor}</div>` : ''}
+              ${item.selectedSize ? `<div style="font-size:10px;color:var(--gold);letter-spacing:1px;text-transform:uppercase;">Size: ${item.selectedSize}</div>` : ''}
+            </div>
             <span class="order-item-qty">Qty: ${item.qty || 1}</span>
           </div>
           <div class="order-item-price">₹${(parseFloat(item.price) * (item.qty || 1)).toLocaleString('en-IN')}</div>
@@ -613,7 +616,16 @@
                 const res = await fetch('/api/orders/create', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        items: cartItems.map(i => ({ id: i.id, name: i.name, price: i.price, qty: i.qty || 1, thumb: i.thumb, category: i.category, selectedSize: i.selectedSize || i.size })),
+                        items: cartItems.map(i => ({
+                            id: i.id,
+                            name: i.name,
+                            price: i.price,
+                            qty: i.qty || 1,
+                            thumb: i.thumb,
+                            category: i.category,
+                            selectedSize: i.selectedSize || i.size,
+                            selectedColor: i.selectedColor || null
+                        })),
                         address: { name, phone, line1, line2, city, state, pincode, country: 'India', email },
                         email,
                         couponId: _appliedCoupon?.couponId || null,

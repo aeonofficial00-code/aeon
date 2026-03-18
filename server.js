@@ -20,6 +20,8 @@ async function runMigration() {
     const sql = fs.readFileSync(schemaPath, 'utf-8');
     try {
         await pool.query(sql);
+        // Ensure new columns exist for old DBs
+        await pool.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS available_colors JSONB;`);
         console.log('✅ DB migration complete.');
     } catch (err) {
         console.warn('⚠️  DB migration warning (may already exist):', err.message);
