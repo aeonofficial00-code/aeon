@@ -80,7 +80,8 @@ function renderCartItems() {
       <div style="flex:1;min-width:0;">
         <p style="font-size:13px;color:var(--text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name}</p>
         <p style="font-size:11px;color:var(--text-muted);margin:2px 0 ${item.selectedSize ? '3px' : '8px'};letter-spacing:0.5px;">${item.category}</p>
-        ${item.selectedSize ? `<p style="font-size:10px;color:var(--gold);letter-spacing:1px;margin-bottom:8px;text-transform:uppercase;">Size: ${item.selectedSize}</p>` : ''}
+        ${item.selectedSize ? `<p style="font-size:10px;color:var(--gold);letter-spacing:1px;margin-bottom:4px;text-transform:uppercase;">Size: ${item.selectedSize}</p>` : ''}
+        ${item.selectedColor ? `<p style="font-size:10px;color:var(--gold);letter-spacing:1px;margin-bottom:8px;text-transform:uppercase;">Color: ${item.selectedColor}</p>` : ''}
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
           <div style="display:flex;align-items:center;gap:0;border:1px solid rgba(201,169,110,0.2);border-radius:20px;overflow:hidden;">
             <button onclick="changeQty('${item.id}',-1)" style="background:none;border:none;color:var(--gold);width:28px;height:26px;cursor:pointer;font-size:14px;transition:background 0.2s;" onmouseover="this.style.background='rgba(201,169,110,0.1)'" onmouseout="this.style.background='none'">−</button>
