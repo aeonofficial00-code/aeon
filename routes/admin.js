@@ -4,6 +4,28 @@ const crypto = require('crypto');
 const pool = require('../db/pool');
 const pushRouter = require('./push');
 
+const cloudinary = require('cloudinary').v2;
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+async function uploadToCloudinary(base64Str, folder = 'aeon') {
+    if (!base64Str || typeof base64Str !== 'string' || !base64Str.startsWith('data:image')) return base64Str;
+    if (!process.env.CLOUDINARY_CLOUD_NAME) {
+        console.warn('CLOUDINARY_CLOUD_NAME not set. Falling back to DB storage.');
+        return base64Str;
+    }
+    try {
+        const result = await cloudinary.uploader.upload(base64Str, { folder });
+        return result.secure_url;
+    } catch (err) {
+        console.error('Cloudinary upload error:', err);
+        return base64Str;
+    }
+}
+
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase());
 
 // ── Token store ───────────────────────────────────────────────────────────────
@@ -91,10 +113,16 @@ router.post('/categories', auth, express.json({ limit: '25mb' }), async (req, re
     try {
         const { name, description, cover_data, cover_name, parent_id } = req.body;
         if (!name) return res.status(400).json({ error: 'Name required' });
+        
+        let finalCoverData = cover_data || null;
+        if (finalCoverData && finalCoverData.startsWith('data:image')) {
+            finalCoverData = await uploadToCloudinary(finalCoverData, 'aeon/categories');
+        }
+
         const { rows } = await pool.query(
             `INSERT INTO categories (name, description, cover_data, cover_name, parent_id)
        VALUES ($1,$2,$3,$4,$5) RETURNING id, name, description, cover_name, parent_id, created_at`,
-            [name.trim(), description || '', cover_data || null, cover_name || null, parent_id || null]
+            [name.trim(), description || '', finalCoverData, cover_name || null, parent_id || null]
         );
         res.json(rows[0]);
     } catch (err) {
@@ -111,7 +139,11 @@ router.put('/categories/:id', auth, express.json({ limit: '25mb' }), async (req,
         const vals = [];
         if (name) { updates.push(`name=$${vals.push(name)}`); }
         if (description !== undefined) { updates.push(`description=$${vals.push(description)}`); }
-        if (cover_data) { updates.push(`cover_data=$${vals.push(cover_data)}`); updates.push(`cover_name=$${vals.push(cover_name || '')}`); }
+        if (cover_data) { 
+            const finalCoverData = await uploadToCloudinary(cover_data, 'aeon/categories');
+            updates.push(`cover_data=$${vals.push(finalCoverData)}`); 
+            updates.push(`cover_name=$${vals.push(cover_name || '')}`); 
+        }
         // Always update parent_id (allow setting to null for top-level)
         updates.push(`parent_id=$${vals.push(parent_id || null)}`);
         if (!updates.length) return res.status(400).json({ error: 'Nothing to update' });
@@ -168,10 +200,16 @@ router.post('/products', auth, express.json({ limit: '50mb' }), async (req, res)
 
         const sizesArr = Array.isArray(available_sizes) && available_sizes.length ? available_sizes : null;
         const colorsArr = Array.isArray(available_colors) && available_colors.length ? available_colors : null;
+        
+        const finalImages = [];
+        for (const img of (images || [])) {
+            finalImages.push(await uploadToCloudinary(img, 'aeon/products'));
+        }
+
         const { rows } = await pool.query(
             `INSERT INTO products (name, category, price, description, images, featured, stock, stock_status, is_on_sale, sale_price, available_sizes, available_colors)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
-            [name, category, parseFloat(price) || 0, description || '', JSON.stringify(images || []),
+            [name, category, parseFloat(price) || 0, description || '', JSON.stringify(finalImages),
                 featured === true || featured === 'true',
                 stockVal,
                 finalStatus,
@@ -196,6 +234,14 @@ router.put('/products/:id', auth, express.json({ limit: '50mb' }), async (req, r
         if (stockVal === 0) finalStatus = 'out_of_stock';
         else if (stockVal > 0 && finalStatus === 'out_of_stock') finalStatus = 'in_stock';
 
+        let finalImages = null;
+        if (images) {
+            finalImages = [];
+            for (const img of images) {
+                finalImages.push(await uploadToCloudinary(img, 'aeon/products'));
+            }
+        }
+
         const { rows } = await pool.query(
             `UPDATE products SET
         name        = COALESCE($1, name),
@@ -213,7 +259,7 @@ router.put('/products/:id', auth, express.json({ limit: '50mb' }), async (req, r
         updated_at  = NOW()
        WHERE id = $13 RETURNING *`,
             [name || null, category || null, price ? parseFloat(price) : null, description || null,
-            images ? JSON.stringify(images) : null,
+            finalImages ? JSON.stringify(finalImages) : null,
             featured !== undefined ? (featured === true || featured === 'true') : null,
                 stockVal, finalStatus,
             is_on_sale !== undefined ? (is_on_sale === true || is_on_sale === 'true') : null,

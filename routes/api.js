@@ -29,7 +29,8 @@ router.get('/categories', async (req, res) => {
                   OR LOWER(p.category) IN (
                        SELECT LOWER(sc.name) FROM categories sc WHERE sc.parent_id = c.id
                   )) AS count,
-        CASE WHEN c.cover_data IS NOT NULL THEN '/api/categories/' || c.id || '/cover' ELSE NULL END AS cover
+        CASE WHEN c.cover_data LIKE 'http%' THEN c.cover_data
+             WHEN c.cover_data IS NOT NULL THEN '/api/categories/' || c.id || '/cover' ELSE NULL END AS cover
       FROM categories c
       ORDER BY c.parent_id NULLS FIRST, c.name
     `);
@@ -56,7 +57,8 @@ router.get('/subcategories', async (req, res) => {
         const { rows } = await pool.query(
             `SELECT c.id, c.name,
                     (SELECT COUNT(*) FROM products p WHERE LOWER(p.category) = LOWER(c.name)) AS count,
-                    CASE WHEN c.cover_data IS NOT NULL THEN '/api/categories/' || c.id || '/cover' ELSE NULL END AS cover
+                    CASE WHEN c.cover_data LIKE 'http%' THEN c.cover_data
+                         WHEN c.cover_data IS NOT NULL THEN '/api/categories/' || c.id || '/cover' ELSE NULL END AS cover
              FROM categories c
              JOIN categories p ON c.parent_id = p.id
              WHERE LOWER(p.name) = LOWER($1)
@@ -73,7 +75,10 @@ router.get('/categories/:id/cover', async (req, res) => {
         const { rows } = await pool.query(
             `SELECT cover_data FROM categories WHERE id=$1`, [req.params.id]
         );
-        sendBase64Image(res, rows[0]?.cover_data);
+        const data = rows[0]?.cover_data;
+        if (!data) return res.status(404).end();
+        if (data.startsWith('http')) return res.redirect(302, data);
+        sendBase64Image(res, data);
     } catch (err) { res.status(500).end(); }
 });
 
@@ -85,7 +90,7 @@ router.get('/products', async (req, res) => {
         const cat = category ? decodeURIComponent(category) : null;
         const { rows } = await pool.query(
             `SELECT p.id, p.name, p.category, p.price, p.description, p.featured, p.is_on_sale, p.sale_price, p.stock, p.stock_status, p.available_sizes, p.available_colors, p.created_at,
-              '/api/products/' || p.id || '/thumb' AS thumb
+              CASE WHEN p.images->>0 LIKE 'http%' THEN p.images->>0 ELSE '/api/products/' || p.id || '/thumb' END AS thumb
        FROM products p
        LEFT JOIN categories c ON TRIM(LOWER(p.category)) = TRIM(LOWER(c.name))
        LEFT JOIN categories parent ON c.parent_id = parent.id
@@ -109,6 +114,8 @@ router.get('/products/:id/thumb', async (req, res) => {
         const raw = rows[0]?.img;
         // raw might be a JSON string (e.g. "\"data:image/...\"") — unquote it
         const data = typeof raw === 'string' ? raw.replace(/^"|"$/g, '') : null;
+        if (!data) return res.status(404).end();
+        if (data.startsWith('http')) return res.redirect(302, data);
         sendBase64Image(res, data);
     } catch (err) { res.status(500).end(); }
 });
@@ -120,7 +127,10 @@ router.get('/products/:id', async (req, res) => {
         if (!rows.length) return res.status(404).json({ error: 'Not found' });
         const p = rows[0];
         // Build image URLs instead of returning raw base64
-        const imageUrls = (p.images || []).map((_, i) => `/api/products/${p.id}/image/${i}`);
+        const imageUrls = (p.images || []).map((img, i) => {
+            if (typeof img === 'string' && img.startsWith('http')) return img;
+            return `/api/products/${p.id}/image/${i}`;
+        });
         res.json({ ...p, imageUrls, images: undefined });
     } catch (err) { res.status(500).json({ error: 'Database error' }); }
 });
@@ -134,6 +144,8 @@ router.get('/products/:id/image/:idx', async (req, res) => {
         );
         const raw = rows[0]?.img;
         const data = typeof raw === 'string' ? raw.replace(/^"|"$/g, '') : null;
+        if (!data) return res.status(404).end();
+        if (data.startsWith('http')) return res.redirect(302, data);
         sendBase64Image(res, data);
     } catch (err) { res.status(500).end(); }
 });
@@ -143,7 +155,7 @@ router.get('/featured', async (req, res) => {
     try {
         const { rows } = await pool.query(
             `SELECT id, name, category, price, description, featured, stock_status, created_at,
-              '/api/products/' || id || '/thumb' AS thumb
+              CASE WHEN images->>0 LIKE 'http%' THEN images->>0 ELSE '/api/products/' || id || '/thumb' END AS thumb
        FROM products WHERE featured=true ORDER BY created_at DESC`
         );
         res.json(rows);
@@ -155,7 +167,7 @@ router.get('/sale', async (req, res) => {
     try {
         const { rows } = await pool.query(
             `SELECT id, name, category, price, sale_price, is_on_sale, description, stock_status, created_at,
-              '/api/products/' || id || '/thumb' AS thumb
+              CASE WHEN images->>0 LIKE 'http%' THEN images->>0 ELSE '/api/products/' || id || '/thumb' END AS thumb
        FROM products WHERE is_on_sale=true ORDER BY created_at DESC`
         );
         res.json(rows);
