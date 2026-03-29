@@ -1264,6 +1264,9 @@ footer {
   display: block;
   width: 18px;
   height: 18px;
+}
+
+.social-links a svg:not(.lucide) {
   fill: currentColor;
 }
 
