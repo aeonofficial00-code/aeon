@@ -1266,10 +1266,6 @@ footer {
   height: 18px;
 }
 
-.social-links a svg:not(.lucide) {
-  fill: currentColor;
-}
-
 .social-links a i {
   display: block;
   width: 16px;
