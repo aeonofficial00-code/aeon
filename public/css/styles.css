@@ -787,7 +787,6 @@ button {
   overflow: hidden;
   aspect-ratio: 3/4;
   cursor: pointer;
-  group: true;
   transition: transform var(--transition);
 }
 
@@ -1252,12 +1251,26 @@ footer {
   height: 36px;
   border: 1px solid rgba(201, 169, 110, 0.2);
   border-radius: 50%;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--text-muted);
-  font-size: 14px;
   transition: all var(--transition-fast);
+  text-decoration: none;
+}
+
+.social-links a svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.social-links a i {
+  display: block;
+  width: 16px;
+  height: 16px;
 }
 
 .social-links a:hover {
