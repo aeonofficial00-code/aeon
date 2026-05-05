@@ -548,7 +548,10 @@ button {
   align-items: center;
   justify-content: flex-start;
   padding-top: calc(var(--nav-height) + 60px);
+  padding-bottom: 60px;
   gap: 32px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   transform: translateX(100%);
   visibility: hidden;
   pointer-events: none;
