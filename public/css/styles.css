@@ -1800,10 +1800,10 @@ footer {
   .hero-image-side {
     position: absolute;
     inset: 0;
-    opacity: 0.5;
+    opacity: 0.2;
     z-index: 1;
     display: block;
-    filter: brightness(0.6);
+    filter: grayscale(1) brightness(0.5);
   }
 
   .hero-image-side img {
