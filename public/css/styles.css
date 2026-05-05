@@ -708,7 +708,11 @@ button {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, var(--dark) 0%, var(--dark) 15%, transparent 85%);
+  background: linear-gradient(to right, 
+    var(--dark) 0%, 
+    rgba(10, 10, 10, 0.9) 10%, 
+    rgba(10, 10, 10, 0.4) 40%, 
+    transparent 80%);
   z-index: 1;
 }
 
@@ -1808,7 +1812,7 @@ footer {
     opacity: 0.8;
     z-index: 1;
     display: block;
-    filter: brightness(0.4);
+    filter: brightness(0.5);
   }
 
   .hero-image-side::before {
