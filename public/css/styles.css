@@ -1805,10 +1805,10 @@ footer {
     position: absolute;
     inset: 0;
     width: 100% !important;
-    opacity: 0.5;
+    opacity: 0.8;
     z-index: 1;
     display: block;
-    filter: brightness(0.4);
+    filter: brightness(0.3);
   }
 
   .hero-image-side::before {
