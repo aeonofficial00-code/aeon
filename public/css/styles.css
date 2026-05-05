@@ -1808,7 +1808,7 @@ footer {
     opacity: 0.8;
     z-index: 1;
     display: block;
-    filter: brightness(0.3);
+    filter: brightness(0.5);
   }
 
   .hero-image-side::before {
