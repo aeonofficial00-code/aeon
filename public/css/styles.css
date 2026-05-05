@@ -1797,13 +1797,17 @@ footer {
     display: flex;
   }
 
+  .hero-bg {
+    background: var(--dark); /* Simplify background on mobile */
+  }
+
   .hero-image-side {
     position: absolute;
     inset: 0;
-    opacity: 0.1;
+    opacity: 0.5;
     z-index: 1;
     display: block;
-    filter: grayscale(1) brightness(0.5);
+    filter: brightness(0.4);
   }
 
   .hero-image-side img {
