@@ -609,8 +609,8 @@ button {
   background: linear-gradient(to left, 
     var(--dark) 0%, 
     var(--dark) 55%, 
-    rgba(201, 169, 110, 0.08) 85%, 
-    rgba(201, 169, 110, 0.2) 100%);
+    rgba(95, 76, 39, 0.08) 85%, 
+    rgba(201, 169, 110, 0.1) 100%);
   overflow: hidden;
 }
 
