@@ -1804,10 +1804,15 @@ footer {
   .hero-image-side {
     position: absolute;
     inset: 0;
+    width: 100% !important;
     opacity: 0.5;
     z-index: 1;
     display: block;
     filter: brightness(0.4);
+  }
+
+  .hero-image-side::before {
+    display: none;
   }
 
   .hero-image-side img {
