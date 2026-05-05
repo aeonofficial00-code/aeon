@@ -606,7 +606,9 @@ button {
 .hero-bg {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at 30% 50%, rgba(201, 169, 110, 0.08) 0%, transparent 65%),
+  background: 
+    linear-gradient(to right, var(--dark) 0%, var(--dark) 40%, transparent 60%),
+    radial-gradient(ellipse at 30% 50%, rgba(201, 169, 110, 0.08) 0%, transparent 65%),
     radial-gradient(ellipse at 80% 20%, rgba(201, 169, 110, 0.05) 0%, transparent 50%),
     var(--dark);
   overflow: hidden;
