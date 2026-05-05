@@ -622,11 +622,15 @@ button {
 
 .particle {
   position: absolute;
-  width: 2px;
-  height: 2px;
   background: var(--gold);
   border-radius: 50%;
-  animation: float 3s ease-in-out infinite;
+  box-shadow: 0 0 4px var(--gold), 0 0 8px rgba(201, 169, 110, 0.4);
+  animation: float 4s ease-in-out infinite, pulseGlow 3s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.3; transform: scale(1); box-shadow: 0 0 4px var(--gold); }
+  50% { opacity: 0.8; transform: scale(1.5); box-shadow: 0 0 10px var(--gold), 0 0 20px rgba(201, 169, 110, 0.6); }
 }
 
 .hero-content {

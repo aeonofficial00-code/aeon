@@ -761,10 +761,14 @@
 
     function setupParticles() {
       const container = document.getElementById('hero-particles');
-      for (let i = 0; i < 30; i++) {
+      // Create 50 particles instead of 30, with a bias towards the left (margin area)
+      for (let i = 0; i < 50; i++) {
         const p = document.createElement('div');
         p.className = 'particle';
-        p.style.cssText = `left:${Math.random() * 100}%;top:${Math.random() * 100}%;width:${1 + Math.random() * 3}px;height:${1 + Math.random() * 3}px;animation-delay:${Math.random() * 4}s;animation-duration:${3 + Math.random() * 4}s;opacity:${0.2 + Math.random() * 0.5};`;
+        // More particles on the left side (0-50%)
+        const leftBase = i < 35 ? Math.random() * 50 : Math.random() * 100;
+        const size = 1 + Math.random() * 3;
+        p.style.cssText = `left:${leftBase}%;top:${Math.random() * 100}%;width:${size}px;height:${size}px;animation-delay:${Math.random() * 5}s;animation-duration:${4 + Math.random() * 6}s;`;
         container.appendChild(p);
       }
     }
