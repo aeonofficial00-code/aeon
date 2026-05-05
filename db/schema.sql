@@ -1,4 +1,4 @@
--- AEON Jewellery – Full PostgreSQL Schema (up-to-date)
+-- AEONV Jewellery – Full PostgreSQL Schema (up-to-date)
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- ── USERS ────────────────────────────────────────────────────────────────────

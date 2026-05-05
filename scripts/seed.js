@@ -12,7 +12,7 @@ const categoriesDir = path.join(__dirname, '..', 'categoriess');
 
 const priceRanges = {
     'AD NECKLACE': [1499, 2499],
-    'AEON signature Sp Collection': [1999, 3499],
+    'AEONV signature Sp Collection': [1999, 3499],
     'Anklets': [599, 999],
     'Anti- tarnish bangles': [799, 1499],
     'Anti- tarnish watch Bangles': [1299, 2199],
@@ -28,7 +28,7 @@ const priceRanges = {
 
 const descriptions = {
     'AD NECKLACE': 'Stunning American Diamond necklace, crafted for weddings and celebrations.',
-    'AEON signature Sp Collection': 'Exclusive AEON signature pieces with premium design and finish.',
+    'AEONV signature Sp Collection': 'Exclusive AEONV signature pieces with premium design and finish.',
     'Anklets': 'Delicate gold-plated anklets that add charm to every step.',
     'Anti- tarnish bangles': 'Premium anti-tarnish bangles that retain their golden shine for years.',
     'Anti- tarnish watch Bangles': 'Elegant watch bangles with anti-tarnish coating – timeless and durable.',
@@ -49,7 +49,7 @@ function randomPrice([min, max]) {
 }
 function productName(cat, idx) {
     const word = cat.replace(/[^a-zA-Z ]/g, '').trim().split(' ').pop();
-    return `AEON ${word} – ${suffixes[idx % suffixes.length]} Edition`;
+    return `AEONV ${word} – ${suffixes[idx % suffixes.length]} Edition`;
 }
 function fileToBase64(filePath) {
     try {

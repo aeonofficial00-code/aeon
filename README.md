@@ -1,6 +1,6 @@
-# AEON Jewellery – E-Commerce Website
+# AEONV Jewellery – E-Commerce Website
 
-A modern, luxury jewellery e-commerce website for the **AEON** brand with an admin dashboard and Render.com deployment.
+A modern, luxury jewellery e-commerce website for the **AEONV** brand with an admin dashboard and Render.com deployment.
 
 ---
 

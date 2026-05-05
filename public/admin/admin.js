@@ -1,5 +1,5 @@
 /* ============================================
-   AEON Admin Dashboard – admin.js (base64)
+   AEONV Admin Dashboard – admin.js (base64)
    ============================================ */
 
 const TOKEN_KEY = 'aeon_admin_token';

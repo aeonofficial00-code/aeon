@@ -1,5 +1,5 @@
 /* ====================================
-   AEON Jewellery – Design System
+   AEONV Jewellery – Design System
    ==================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&family=Inter:wght@300;400;500;600&display=swap');
@@ -492,11 +492,7 @@ button {
 .nav-logout-link:hover { color: rgba(255, 100, 100, 0.8); }
 .nav-signin-btn:hover { color: var(--gold); }
 
-@media (max-width: 1200px) {
-  .nav-links {
-    gap: 25px;
-  }
-}
+/* Breakpoints moved to bottom for better override management */
 
 
 /* Mobile Nav Toggle */
@@ -553,11 +549,15 @@ button {
   justify-content: center;
   gap: 32px;
   transform: translateX(100%);
-  transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  visibility: hidden;
+  pointer-events: none;
+  transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), visibility 0.5s;
 }
 
 .mobile-menu.open {
   transform: translateX(0);
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .mobile-menu a {
@@ -585,15 +585,13 @@ button {
 
 @media (max-width: 1100px) {
   .nav-links {
+    display: none;
+  }
+  .hamburger {
+    display: flex;
+  }
+  .nav-actions {
     gap: 15px;
-  }
-  .nav-links a {
-    font-size: 11px;
-    letter-spacing: 1px;
-  }
-  .nav-auth-links {
-    gap: 8px;
-    padding-left: 10px;
   }
 }
 
@@ -1803,7 +1801,18 @@ footer {
   }
 
   .hero-image-side {
-    display: none;
+    position: absolute;
+    inset: 0;
+    opacity: 0.2;
+    z-index: 1;
+    display: block;
+    filter: grayscale(1) brightness(0.5);
+  }
+
+  .hero-image-side img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
   .nav-user-slot, .nav-admin-btn, .nav-auth-links, .nav-signin-btn {

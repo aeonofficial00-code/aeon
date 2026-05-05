@@ -4,12 +4,12 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Collection – AEON Jewellery</title>
+    <title>Collection – AEONV Jewellery</title>
     <meta name="description" id="meta-desc"
-        content="Browse AEON's curated jewellery collection. Gold-plated necklaces, bangles, earrings and more." />
-    <meta property="og:site_name" content="AEON Jewellery" />
+        content="Browse AEONV's curated jewellery collection. Gold-plated necklaces, bangles, earrings and more." />
+    <meta property="og:site_name" content="AEONV Jewellery" />
     <meta property="og:type" content="website" />
-    <meta property="og:title" id="og-title" content="AEON Jewellery Collections" />
+    <meta property="og:title" id="og-title" content="AEONV Jewellery Collections" />
     <meta property="og:description" id="og-desc" content="Browse our curated gold-plated jewellery collection." />
     <meta property="og:image" id="og-image" content="" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -25,7 +25,7 @@
     <!-- NAVIGATION -->
     <nav id="navbar" class="scrolled">
         <div class="nav-inner">
-            <a href="/" class="nav-logo">AEON</a>
+            <a href="/" class="nav-logo">AEONV</a>
             <ul class="nav-links">
                 <li><a href="/">Home</a></li>
                 <li><a href="/#collections" class="active">Collections</a></li>
@@ -168,8 +168,8 @@
     <footer>
         <div class="container">
             <div class="footer-bottom">
-                <a href="/" class="footer-logo" style="font-size:24px;display:inline-block;">AEON</a>
-                <p>© 2026 AEON Jewellery. All rights reserved.</p>
+                <a href="/" class="footer-logo" style="font-size:24px;display:inline-block;">AEONV</a>
+                <p>© 2026 AEONV Jewellery. All rights reserved.</p>
                 <div class="social-links">
                     <a href="https://www.instagram.com/aeon_.official" target="_blank" aria-label="Instagram">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
@@ -212,11 +212,11 @@
         let allProducts = [];
 
         async function initCategoryPage() {
-            document.title = `${catName || 'Collection'} – AEON Jewellery`;
+            document.title = `${catName || 'Collection'} – AEONV Jewellery`;
             document.getElementById('page-title').textContent = catName || 'All Collections';
             document.getElementById('breadcrumb-cat').textContent = catName || 'Collections';
-            document.getElementById('meta-desc')?.setAttribute('content', `Browse AEON's ${catName} collection. Premium 24K gold-plated jewellery.`);
-            document.getElementById('og-title')?.setAttribute('content', `${catName} – AEON Jewellery`);
+            document.getElementById('meta-desc')?.setAttribute('content', `Browse AEONV's ${catName} collection. Premium 24K gold-plated jewellery.`);
+            document.getElementById('og-title')?.setAttribute('content', `${catName} – AEONV Jewellery`);
             document.getElementById('og-desc')?.setAttribute('content', `Shop our ${catName} collection. Handcrafted gold-plated pieces.`);
 
             const [allCats, subs] = await Promise.all([

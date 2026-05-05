@@ -1,5 +1,5 @@
 /* ================================================
-   AEON Jewellery – Shared JS (main.js)
+   AEONV Jewellery – Shared JS (main.js)
    Cart, Nav, Helpers, Product Card Renderer
    ================================================ */
 

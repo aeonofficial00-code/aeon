@@ -179,7 +179,7 @@ async function start() {
     }
 
     app.listen(PORT, () => {
-        console.log(`✨ AEON Jewellery running at http://localhost:${PORT}`);
+        console.log(`✨ AEONV Jewellery running at http://localhost:${PORT}`);
         if (!process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID === 'PLACEHOLDER_CLIENT_ID') {
             console.warn('⚠️  Google OAuth not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env');
         }

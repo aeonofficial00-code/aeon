@@ -1,7 +1,7 @@
 [
   {
     "id": "2b9026b4-4171-48f3-8d89-6fb42131d787",
-    "name": "AEON NECKLACE – Classic Edition",
+    "name": "AEONV NECKLACE – Classic Edition",
     "category": "AD NECKLACE",
     "price": 1980,
     "description": "Stunning American Diamond necklace, perfect for weddings and special occasions.",
@@ -14,32 +14,32 @@
   },
   {
     "id": "b03fc6e7-856d-4320-9eb2-886b0dd461f3",
-    "name": "AEON Collection – Classic Edition",
-    "category": "AEON signature Sp Collection",
+    "name": "AEONV Collection – Classic Edition",
+    "category": "AEONV signature Sp Collection",
     "price": 3465,
-    "description": "Exclusive AEON signature pieces crafted with premium materials and elegant design.",
+    "description": "Exclusive AEONV signature pieces crafted with premium materials and elegant design.",
     "images": [
-      "/categoriess/AEON%20signature%20Sp%20Collection/image%20copy.png",
-      "/categoriess/AEON%20signature%20Sp%20Collection/image.png"
+      "/categoriess/AEONV%20signature%20Sp%20Collection/image%20copy.png",
+      "/categoriess/AEONV%20signature%20Sp%20Collection/image.png"
     ],
     "featured": true,
     "createdAt": "2026-02-24T18:12:39.816Z"
   },
   {
     "id": "0d3f3be9-dde3-4336-a297-a169febe45b2",
-    "name": "AEON Collection – Elite Edition",
-    "category": "AEON signature Sp Collection",
+    "name": "AEONV Collection – Elite Edition",
+    "category": "AEONV signature Sp Collection",
     "price": 3069,
-    "description": "Exclusive AEON signature pieces crafted with premium materials and elegant design.",
+    "description": "Exclusive AEONV signature pieces crafted with premium materials and elegant design.",
     "images": [
-      "/categoriess/AEON%20signature%20Sp%20Collection/WhatsApp%20Image%202026-02-24%20at%209.13.08%20PM.jpeg"
+      "/categoriess/AEONV%20signature%20Sp%20Collection/WhatsApp%20Image%202026-02-24%20at%209.13.08%20PM.jpeg"
     ],
     "featured": false,
     "createdAt": "2026-02-24T18:12:39.816Z"
   },
   {
     "id": "8817ed55-275d-415e-a129-65236ca7a29f",
-    "name": "AEON Anklets – Classic Edition",
+    "name": "AEONV Anklets – Classic Edition",
     "category": "Anklets",
     "price": 891,
     "description": "Delicate gold-plated anklets that add a charming touch to every step.",
@@ -52,7 +52,7 @@
   },
   {
     "id": "f1ddd6b0-b8fe-41f9-af03-8f711d99bc76",
-    "name": "AEON Anklets – Elite Edition",
+    "name": "AEONV Anklets – Elite Edition",
     "category": "Anklets",
     "price": 792,
     "description": "Delicate gold-plated anklets that add a charming touch to every step.",
@@ -64,7 +64,7 @@
   },
   {
     "id": "b47c1365-a210-4750-9d4f-57a9451daac9",
-    "name": "AEON bangles – Classic Edition",
+    "name": "AEONV bangles – Classic Edition",
     "category": "Anti- tarnish bangles",
     "price": 1485,
     "description": "Premium anti-tarnish bangles that retain their golden shine for years.",
@@ -77,7 +77,7 @@
   },
   {
     "id": "c642e430-6bde-4381-af43-92534bb3d8fa",
-    "name": "AEON bangles – Elite Edition",
+    "name": "AEONV bangles – Elite Edition",
     "category": "Anti- tarnish bangles",
     "price": 1287,
     "description": "Premium anti-tarnish bangles that retain their golden shine for years.",
@@ -89,7 +89,7 @@
   },
   {
     "id": "02b3620a-c48c-43bc-be32-f339e3955278",
-    "name": "AEON Bangles – Classic Edition",
+    "name": "AEONV Bangles – Classic Edition",
     "category": "Anti- tarnish watch Bangles",
     "price": 1782,
     "description": "Elegant watch bangles with anti-tarnish coating – timeless and durable.",
@@ -102,7 +102,7 @@
   },
   {
     "id": "527bad7c-528a-49e4-a09b-17d89a8884c9",
-    "name": "AEON Earrings – Classic Edition",
+    "name": "AEONV Earrings – Classic Edition",
     "category": "Earrings",
     "price": 693,
     "description": "Exquisite earrings for every occasion from casual to bridal.",
@@ -115,7 +115,7 @@
   },
   {
     "id": "c9a112fe-8ff8-4f16-81d9-c8294d48e1ee",
-    "name": "AEON HARAM – Classic Edition",
+    "name": "AEONV HARAM – Classic Edition",
     "category": "GOLD LAYERED HARAM",
     "price": 3762,
     "description": "Royal gold-layered haram necklace, a statement piece for festive wear.",
@@ -128,7 +128,7 @@
   },
   {
     "id": "caa7281a-6de7-4762-819e-afea6b9cc7b4",
-    "name": "AEON HARAM – Elite Edition",
+    "name": "AEONV HARAM – Elite Edition",
     "category": "GOLD LAYERED HARAM",
     "price": 2772,
     "description": "Royal gold-layered haram necklace, a statement piece for festive wear.",
@@ -141,7 +141,7 @@
   },
   {
     "id": "a936c910-8b66-4aae-b162-5c19d25e1903",
-    "name": "AEON bangles – Classic Edition",
+    "name": "AEONV bangles – Classic Edition",
     "category": "Gold plated bangles",
     "price": 1287,
     "description": "Classic gold-plated bangles, perfect for daily wear or special occasions.",
@@ -154,7 +154,7 @@
   },
   {
     "id": "66d44f70-d9af-4e06-9f56-9304d4e071f2",
-    "name": "AEON bangles – Elite Edition",
+    "name": "AEONV bangles – Elite Edition",
     "category": "Gold plated bangles",
     "price": 1386,
     "description": "Classic gold-plated bangles, perfect for daily wear or special occasions.",
@@ -167,7 +167,7 @@
   },
   {
     "id": "3e249a2f-04ee-4e82-945e-bf18040ffed7",
-    "name": "AEON bangles – Royal Edition",
+    "name": "AEONV bangles – Royal Edition",
     "category": "Gold plated bangles",
     "price": 1782,
     "description": "Classic gold-plated bangles, perfect for daily wear or special occasions.",
@@ -180,7 +180,7 @@
   },
   {
     "id": "104dbd9a-35c9-4e08-b5e2-4a7ea82e523d",
-    "name": "AEON Necklaces – Classic Edition",
+    "name": "AEONV Necklaces – Classic Edition",
     "category": "Gold plated Necklaces",
     "price": 2574,
     "description": "Elegant gold-plated necklaces that radiate sophistication.",
@@ -193,7 +193,7 @@
   },
   {
     "id": "b44c52c7-133e-422e-91f3-e16a65fdc35f",
-    "name": "AEON Necklaces – Elite Edition",
+    "name": "AEONV Necklaces – Elite Edition",
     "category": "Gold plated Necklaces",
     "price": 2772,
     "description": "Elegant gold-plated necklaces that radiate sophistication.",
@@ -205,7 +205,7 @@
   },
   {
     "id": "1790094c-8c0b-4a55-a516-877a6d7436a0",
-    "name": "AEON Rings – Classic Edition",
+    "name": "AEONV Rings – Classic Edition",
     "category": "Gold plated Rings",
     "price": 1089,
     "description": "Stunning gold-plated rings with intricate designs for a royal look.",
@@ -218,7 +218,7 @@
   },
   {
     "id": "6bc4cf59-e996-484c-ad73-db189b771308",
-    "name": "AEON COLLECTION – Classic Edition",
+    "name": "AEONV COLLECTION – Classic Edition",
     "category": "MANTRA COLLECTION",
     "price": 2475,
     "description": "Spiritual and stylish Mantra collection – wear your intentions.",
@@ -231,7 +231,7 @@
   },
   {
     "id": "2521d67c-7711-4864-ae52-9a7a3278c832",
-    "name": "AEON set – Classic Edition",
+    "name": "AEONV set – Classic Edition",
     "category": "Wedding set",
     "price": 6237,
     "description": "Complete bridal jewellery sets curated for your most special day.",
@@ -244,7 +244,7 @@
   },
   {
     "id": "0830745e-7d53-4149-beb8-ebf5cd4e5774",
-    "name": "AEON set – Elite Edition",
+    "name": "AEONV set – Elite Edition",
     "category": "Wedding set",
     "price": 5643,
     "description": "Complete bridal jewellery sets curated for your most special day.",

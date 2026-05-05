@@ -17,7 +17,7 @@ async function dump() {
     const out = fs.createWriteStream(OUT);
     const write = (s) => out.write(s + '\n');
 
-    write('-- AEON Jewellery DB Backup');
+    write('-- AEONV Jewellery DB Backup');
     write(`-- Generated: ${new Date().toISOString()}`);
     write('');
     write('SET client_encoding = \'UTF8\';');

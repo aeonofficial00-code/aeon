@@ -12,12 +12,12 @@ self.addEventListener('push', function(event) {
                 }
             };
             event.waitUntil(
-                self.registration.showNotification(data.title || 'AEON Jewellery', options)
+                self.registration.showNotification(data.title || 'AEONV Jewellery', options)
             );
         } catch (e) {
             // Fallback for simple text payloads
             event.waitUntil(
-                self.registration.showNotification('AEON Jewellery', {
+                self.registration.showNotification('AEONV Jewellery', {
                     body: event.data.text(),
                     icon: '/images/favicon.png'
                 })

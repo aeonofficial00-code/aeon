@@ -1,5 +1,5 @@
 /**
- * utils/mailer.js – Nodemailer email helper for AEON
+ * utils/mailer.js – Nodemailer email helper for AEONV
  * Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM in .env
  * Works with Gmail (use App Password), Brevo, Mailgun, etc.
  */
@@ -15,7 +15,7 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-const FROM = process.env.SMTP_FROM || `"AEON Jewellery" <${process.env.SMTP_USER}>`;
+const FROM = process.env.SMTP_FROM || `"AEONV Jewellery" <${process.env.SMTP_USER}>`;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL_NOTIFY || process.env.SMTP_USER;
 
 // ── Send order confirmation to customer ───────────────────────────────────────
@@ -36,7 +36,7 @@ async function sendOrderConfirmation(order) {
     const html = `
     <div style="max-width:600px;margin:0 auto;background:#0A0A0A;color:#E8E0D0;font-family:Inter,sans-serif;border:1px solid #222;border-radius:12px;overflow:hidden;">
         <div style="background:linear-gradient(135deg,#9A7840,#C9A96E);padding:28px 32px;">
-            <h1 style="margin:0;font-family:Georgia,serif;font-size:32px;letter-spacing:6px;color:#0A0A0A;">AEON</h1>
+            <h1 style="margin:0;font-family:Georgia,serif;font-size:32px;letter-spacing:6px;color:#0A0A0A;">AEONV</h1>
             <p style="margin:6px 0 0;font-size:11px;letter-spacing:3px;color:rgba(0,0,0,0.6);text-transform:uppercase;">Jewellery</p>
         </div>
         <div style="padding:32px;">
@@ -74,7 +74,7 @@ async function sendOrderConfirmation(order) {
 
     await transporter.sendMail({
         from: FROM, to,
-        subject: `✅ Order Confirmed – #${order.id?.slice(0, 8).toUpperCase()} | AEON Jewellery`,
+        subject: `✅ Order Confirmed – #${order.id?.slice(0, 8).toUpperCase()} | AEONV Jewellery`,
         html
     });
 }
