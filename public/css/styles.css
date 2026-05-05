@@ -1808,7 +1808,7 @@ footer {
     object-fit: cover;
   }
 
-  .nav-user-slot, .nav-admin-btn, .nav-auth-links, .nav-signin-btn {
+  .nav-user-slot, .nav-admin-btn, .nav-auth-links, .nav-signin-btn, .hide-mobile {
     display: none !important;
   }
 
