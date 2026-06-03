@@ -131,22 +131,22 @@ function renderCartItems() {
         <div style="display:flex;flex-direction:column;gap:8px;">
           ${BOX_OPTIONS.map(b => {
       const isSelected = _selectedBox && _selectedBox.id === b.id;
-      return \`<div onclick="selectBox('\${b.id}')" id="box-opt-\${b.id}" style="
+      return `<div onclick="selectBox('${b.id}')" id="box-opt-${b.id}" style="
               display:flex;align-items:center;gap:10px;padding:9px 12px;
               border-radius:10px;cursor:pointer;transition:all 0.2s;
-              border:1px solid \${isSelected ? 'rgba(201,169,110,0.6)' : 'rgba(255,255,255,0.07)'};
-              background:\${isSelected ? 'rgba(201,169,110,0.08)' : 'transparent'};
+              border:1px solid ${isSelected ? 'rgba(201,169,110,0.6)' : 'rgba(255,255,255,0.07)'};
+              background:${isSelected ? 'rgba(201,169,110,0.08)' : 'transparent'};
             ">
-              <img src="\${b.img}" alt="\${b.label}" style="width:44px;height:34px;object-fit:cover;border-radius:6px;border:1px solid rgba(255,255,255,0.08);flex-shrink:0;" onerror="this.style.display='none'"/>
+              <img src="${b.img}" alt="${b.label}" style="width:44px;height:34px;object-fit:cover;border-radius:6px;border:1px solid rgba(255,255,255,0.08);flex-shrink:0;" onerror="this.style.display='none'"/>
               <div style="flex:1;min-width:0;">
-                <div style="font-size:12px;color:\${isSelected ? 'var(--gold)' : '#ddd'};font-weight:500;">\${b.label}</div>
-                <div style="font-size:10px;color:var(--text-muted);letter-spacing:0.5px;">\${b.size}</div>
+                <div style="font-size:12px;color:${isSelected ? 'var(--gold)' : '#ddd'};font-weight:500;">${b.label}</div>
+                <div style="font-size:10px;color:var(--text-muted);letter-spacing:0.5px;">${b.size}</div>
               </div>
-              <div style="font-size:12px;font-weight:600;color:\${b.price === 0 ? '#5cb85c' : 'var(--gold)'};white-space:nowrap;">
-                \${b.price === 0 ? 'Free' : '+₹' + b.price}
+              <div style="font-size:12px;font-weight:600;color:${b.price === 0 ? '#5cb85c' : 'var(--gold)'};white-space:nowrap;">
+                ${b.price === 0 ? 'Free' : '+₹' + b.price}
               </div>
-              \${isSelected ? \`<div style="width:16px;height:16px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>\` : \`<div style="width:16px;height:16px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.15);flex-shrink:0;"></div>\`}
-            </div>\`;
+              ${isSelected ? `<div style="width:16px;height:16px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>` : `<div style="width:16px;height:16px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.15);flex-shrink:0;"></div>`}
+            </div>`;
     }).join('')}
         </div>
       </div>`;
