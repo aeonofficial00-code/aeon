@@ -334,12 +334,22 @@
             </div>
             <span class="status-badge ${statusClass}">${order.status}</span>
         </div>
-        <div class="order-items-preview">
-            ${items.slice(0, 5).map(i => `<img class="order-thumb" src="${i.thumb || ''}" alt="${i.name}"
-                onerror="this.src='';this.style.display='none'" />`).join('')}
-            ${items.length > 5 ? `<div class="order-thumb"
-                style="display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--gold);">
-                +${items.length - 5}</div>` : ''}
+        <div class="order-items-preview" style="display:flex; flex-direction:column; gap:10px; margin-top:8px;">
+            ${items.map(i => {
+                let specs = [];
+                if (i.selectedSize) specs.push(`Size: ${i.selectedSize}`);
+                if (i.selectedColor) specs.push(`Color: ${i.selectedColor}`);
+                const specsStr = specs.length ? `<div style="font-size:10px;color:var(--gold);letter-spacing:1px;text-transform:uppercase;margin-top:2px;">${specs.join(' | ')}</div>` : '';
+                return `
+                <div style="display:flex; gap:12px; align-items:center;">
+                    <img class="order-thumb" src="${i.thumb || ''}" alt="${i.name}" onerror="this.src='';this.style.display='none'" />
+                    <div>
+                        <div style="font-size:13px; color:var(--text); font-weight:500;">${i.name}</div>
+                        ${specsStr}
+                        <div style="font-size:11px; color:var(--text-muted); margin-top:3px;">Qty: ${i.qty || 1} × ₹${parseFloat(i.price).toLocaleString('en-IN')}</div>
+                    </div>
+                </div>`;
+            }).join('')}
         </div>
         <div class="order-footer">
             <div>

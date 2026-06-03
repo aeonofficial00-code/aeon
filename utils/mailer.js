@@ -51,13 +51,17 @@ async function sendOrderConfirmation(order) {
     const to = order.address?.email || order.guest_email;
     if (!to) return;
 
-    const items = (order.items || []).map(i =>
-        `<tr>
-            <td style="padding:8px 12px;border-bottom:1px solid #222;">${i.name}</td>
+    const items = (order.items || []).map(i => {
+        let specs = [];
+        if (i.selectedSize) specs.push(`Size: ${i.selectedSize}`);
+        if (i.selectedColor) specs.push(`Color: ${i.selectedColor}`);
+        const specsStr = specs.length ? `<br/><span style="font-size:10px;color:#888;">${specs.join(' | ')}</span>` : '';
+        return `<tr>
+            <td style="padding:8px 12px;border-bottom:1px solid #222;">${i.name}${specsStr}</td>
             <td style="padding:8px 12px;border-bottom:1px solid #222;text-align:center;">×${i.qty || 1}</td>
             <td style="padding:8px 12px;border-bottom:1px solid #222;text-align:right;color:#C9A96E;">₹${(parseFloat(i.price) * (i.qty || 1)).toLocaleString('en-IN')}</td>
-        </tr>`
-    ).join('');
+        </tr>`;
+    }).join('');
 
     const addr = order.address || {};
     const html = `
@@ -113,13 +117,61 @@ async function sendAdminOrderAlert(order) {
     if (!ADMIN_EMAIL) return;
     
     const addr = order.address || {};
+    const emailToUse = addr.email || order.guest_email || 'N/A';
     const subject = `🛒 New Order #${order.id?.slice(0, 8).toUpperCase()} – ₹${parseFloat(order.total || 0).toLocaleString('en-IN')}`;
-    const html = `<p><strong>New order received!</strong></p>
-               <p><strong>Customer:</strong> ${addr.name} | ${addr.phone}</p>
-               <p><strong>Total:</strong> ₹${parseFloat(order.total || 0).toLocaleString('en-IN')}</p>
-               <p><strong>Address:</strong> ${addr.line1}, ${addr.city}, ${addr.state} – ${addr.pincode}</p>
-               <p><strong>Items:</strong> ${order.items?.length || 0}</p>
-               <p><a href="${process.env.APP_URL || ''}/admin">View in Admin Dashboard →</a></p>`;
+    
+    const itemsTable = (order.items || []).map(i => {
+        let specs = [];
+        if (i.selectedSize) specs.push(`Size: ${i.selectedSize}`);
+        if (i.selectedColor) specs.push(`Color: ${i.selectedColor}`);
+        const specsStr = specs.length ? `<br/><span style="font-size:11px;color:#666;">${specs.join(' | ')}</span>` : '';
+        return `<tr>
+            <td style="padding:8px;border-bottom:1px solid #ddd;">${i.name}${specsStr}</td>
+            <td style="padding:8px;border-bottom:1px solid #ddd;text-align:center;">${i.qty || 1}</td>
+            <td style="padding:8px;border-bottom:1px solid #ddd;text-align:right;">₹${(parseFloat(i.price) * (i.qty || 1)).toLocaleString('en-IN')}</td>
+        </tr>`;
+    }).join('');
+
+    const html = `
+    <div style="font-family:sans-serif;color:#333;max-width:600px;margin:0 auto;border:1px solid #eee;border-radius:8px;overflow:hidden;">
+        <div style="background:#111;color:#C9A96E;padding:20px;">
+            <h2 style="margin:0;">🛒 New Order #${order.id?.slice(0, 8).toUpperCase()}</h2>
+        </div>
+        <div style="padding:20px;">
+            <h3 style="border-bottom:1px solid #eee;padding-bottom:8px;margin-top:0;">Customer Details</h3>
+            <p style="margin:4px 0;"><strong>Name:</strong> ${addr.name || 'Guest'}</p>
+            <p style="margin:4px 0;"><strong>Phone:</strong> <a href="tel:${addr.phone || ''}">${addr.phone || 'N/A'}</a></p>
+            <p style="margin:4px 0;"><strong>Email:</strong> <a href="mailto:${emailToUse}">${emailToUse}</a></p>
+            <p style="margin:4px 0;"><strong>Address:</strong><br/>
+                ${addr.line1 || ''}${addr.line2 ? ', ' + addr.line2 : ''}<br/>
+                ${addr.city || ''}, ${addr.state || ''} – ${addr.pincode || ''}
+            </p>
+
+            <h3 style="border-bottom:1px solid #eee;padding-bottom:8px;margin-top:24px;">Order Summary</h3>
+            <table style="width:100%;border-collapse:collapse;font-size:14px;">
+                <thead>
+                    <tr style="background:#f9f9f9;">
+                        <th style="padding:8px;text-align:left;border-bottom:2px solid #ddd;">Product</th>
+                        <th style="padding:8px;text-align:center;border-bottom:2px solid #ddd;">Qty</th>
+                        <th style="padding:8px;text-align:right;border-bottom:2px solid #ddd;">Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${itemsTable}
+                </tbody>
+            </table>
+            
+            <div style="margin-top:16px;text-align:right;font-size:14px;">
+                <p style="margin:4px 0;">Subtotal: ₹${parseFloat(order.subtotal || 0).toLocaleString('en-IN')}</p>
+                <p style="margin:4px 0;">Delivery: ${parseFloat(order.delivery_charge || 0) === 0 ? 'FREE' : '₹' + parseFloat(order.delivery_charge || 0).toLocaleString('en-IN')}</p>
+                <h3 style="margin:8px 0;color:#111;">Total Paid: ₹${parseFloat(order.total || 0).toLocaleString('en-IN')}</h3>
+            </div>
+
+            <div style="margin-top:32px;text-align:center;">
+                <a href="${process.env.APP_URL || ''}/admin" style="display:inline-block;background:#111;color:#C9A96E;padding:12px 24px;text-decoration:none;border-radius:4px;font-weight:bold;">View in Admin Dashboard</a>
+            </div>
+        </div>
+    </div>`;
 
     if (process.env.RESEND_API_KEY) {
         return sendViaResend(ADMIN_EMAIL, subject, html);
