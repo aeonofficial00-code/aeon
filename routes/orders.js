@@ -115,7 +115,8 @@ router.post('/verify', express.json(), async (req, res) => {
             
             // Send push notification to admin
             const order = rows[0];
-            const customerName = order.address ? JSON.parse(order.address).name : 'Customer';
+            const addressObj = typeof order.address === 'string' ? JSON.parse(order.address) : order.address;
+            const customerName = addressObj ? addressObj.name : 'Customer';
             pushRouter.broadcastAdmin({
                 title: 'New Order Received! 🛍️',
                 body: `Order #${order.id} from ${customerName} for ₹${order.total}`,
