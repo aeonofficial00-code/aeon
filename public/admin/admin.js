@@ -584,15 +584,38 @@ async function setupAdminPushNotifications() {
     }
 
     try {
-        // Register service worker
-        _swRegistration = await navigator.serviceWorker.register('/sw.js');
-        console.log('✅ Admin SW registered');
+        // Unregister any stale service workers first to prevent conflicts
+        const existingRegs = await navigator.serviceWorker.getRegistrations();
+        for (const reg of existingRegs) {
+            if (reg.active && reg.active.scriptURL.includes('/sw.js')) {
+                // Reuse if already on /sw.js
+                _swRegistration = reg;
+                break;
+            }
+        }
 
-        // Add a notification toggle button to the sidebar
+        // Register fresh if none found
+        if (!_swRegistration) {
+            _swRegistration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        }
+
+        // Wait for SW to be active
+        if (_swRegistration.installing || _swRegistration.waiting) {
+            await new Promise(resolve => {
+                const sw = _swRegistration.installing || _swRegistration.waiting;
+                sw.addEventListener('statechange', function handler() {
+                    if (sw.state === 'activated') { sw.removeEventListener('statechange', handler); resolve(); }
+                });
+                // Timeout fallback
+                setTimeout(resolve, 3000);
+            });
+        }
+
+        console.log('✅ Admin SW ready');
         injectPushToggleButton();
 
-        // Try to auto-subscribe silently if permission already granted
-        if (Notification.permission === 'granted') {
+        // Silently re-subscribe if permission already granted (e.g. after page reload)
+        if (Notification.permission === 'granted' && location.protocol === 'https:') {
             await subscribeAdminToPush(false);
         }
     } catch (err) {
@@ -623,7 +646,6 @@ function injectPushToggleButton() {
     btn.onmouseout = () => { if (!btn.dataset.subscribed) { btn.style.borderColor = 'rgba(201,169,110,0.2)'; btn.style.color = 'var(--text-muted)'; } };
     btn.onclick = toggleAdminPushSubscription;
     sidebarBottom.insertBefore(btn, sidebarBottom.firstChild);
-
     refreshPushButtonState();
 }
 
@@ -631,7 +653,7 @@ async function refreshPushButtonState() {
     const btn = document.getElementById('admin-push-btn');
     if (!btn || !_swRegistration) return;
 
-    const sub = await _swRegistration.pushManager.getSubscription();
+    const sub = await _swRegistration.pushManager.getSubscription().catch(() => null);
     if (sub) {
         btn.textContent = '🔔 Notifications On';
         btn.dataset.subscribed = 'true';
@@ -646,8 +668,8 @@ async function refreshPushButtonState() {
 }
 
 async function toggleAdminPushSubscription() {
-    if (!_swRegistration) return;
-    const sub = await _swRegistration.pushManager.getSubscription();
+    if (!_swRegistration) { showToast('⚠️ Service worker not ready. Try refreshing.'); return; }
+    const sub = await _swRegistration.pushManager.getSubscription().catch(() => null);
     if (sub) {
         await unsubscribeAdminFromPush(sub);
     } else {
@@ -657,13 +679,24 @@ async function toggleAdminPushSubscription() {
 
 async function subscribeAdminToPush(showPrompt = true) {
     if (!_swRegistration) return;
-    try {
-        // Get VAPID public key
-        const keyRes = await fetch('/api/push/vapidPublicKey');
-        if (!keyRes.ok) throw new Error('Could not fetch VAPID key');
-        const { publicKey } = await keyRes.json();
 
-        // Request permission if needed
+    // ── HTTPS check ───────────────────────────────────────────────────────────
+    // Push subscriptions require HTTPS (except localhost for dev)
+    const isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    if (!isSecure) {
+        if (showPrompt) showToast('🔒 Push notifications require HTTPS. Deploy to a secure host to enable.');
+        console.warn('Push blocked: page is not HTTPS');
+        return;
+    }
+
+    try {
+        // Get VAPID public key from server
+        const keyRes = await fetch('/api/push/vapidPublicKey');
+        if (!keyRes.ok) throw new Error('VAPID key not configured on server');
+        const { publicKey } = await keyRes.json();
+        if (!publicKey) throw new Error('Empty VAPID public key returned');
+
+        // Request browser permission if needed
         if (Notification.permission === 'default' && showPrompt) {
             const perm = await Notification.requestPermission();
             if (perm !== 'granted') {
@@ -671,17 +704,24 @@ async function subscribeAdminToPush(showPrompt = true) {
                 return;
             }
         } else if (Notification.permission === 'denied') {
-            showToast('🚫 Notifications are blocked. Enable them in browser settings.');
+            showToast('🚫 Notifications are blocked in browser settings. Click the 🔒 icon in the address bar to allow.');
             return;
         }
 
-        // Subscribe to push
+        // Make sure SW is active before subscribing
+        await navigator.serviceWorker.ready;
+
+        // Clear any existing stale subscription first
+        const existing = await _swRegistration.pushManager.getSubscription().catch(() => null);
+        if (existing) await existing.unsubscribe().catch(() => {});
+
+        // Subscribe
         const subscription = await _swRegistration.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: urlBase64ToUint8Array(publicKey)
         });
 
-        // Send subscription to server
+        // Save to server
         const res = await fetch('/api/push/subscribe', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -696,7 +736,16 @@ async function subscribeAdminToPush(showPrompt = true) {
         }
     } catch (err) {
         console.error('Push subscribe error:', err);
-        if (showPrompt) showToast('⚠️ Could not enable notifications: ' + err.message);
+        if (showPrompt) {
+            // Friendly error messages for common failures
+            let msg = err.message;
+            if (msg.includes('push service') || msg.includes('Registration failed')) {
+                msg = 'Browser push service unavailable. Ensure site is on HTTPS.';
+            } else if (msg.includes('VAPID')) {
+                msg = 'VAPID keys not configured. Set VAPID_PUBLIC_KEY & VAPID_PRIVATE_KEY in .env';
+            }
+            showToast('⚠️ ' + msg);
+        }
     } finally {
         refreshPushButtonState();
     }
@@ -718,7 +767,7 @@ async function unsubscribeAdminFromPush(sub) {
     }
 }
 
-// Utility: convert VAPID key
+// Utility: convert URL-safe base64 VAPID key to Uint8Array
 function urlBase64ToUint8Array(base64String) {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
     const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -728,8 +777,8 @@ function urlBase64ToUint8Array(base64String) {
 
 // Auto-init push setup after auth
 const _origCheckAuth = checkAuth;
-window.checkAuth = async function() {
+window.checkAuth = async function () {
     await _origCheckAuth.call(this, ...arguments);
-    // Delay slightly to let the DOM settle after auth
-    setTimeout(setupAdminPushNotifications, 1000);
+    setTimeout(setupAdminPushNotifications, 1200);
 };
+
