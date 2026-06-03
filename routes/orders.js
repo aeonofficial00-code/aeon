@@ -6,6 +6,7 @@ const router = express.Router();
 const crypto = require('crypto');
 const Razorpay = require('razorpay');
 const pool = require('../db/pool');
+const pushRouter = require('./push');
 
 // ── Razorpay instance ─────────────────────────────────────────────────────────
 const rzp = new Razorpay({
@@ -111,6 +112,15 @@ router.post('/verify', express.json(), async (req, res) => {
             const { sendOrderConfirmation, sendAdminOrderAlert } = require('../utils/mailer');
             sendOrderConfirmation(rows[0]).catch(e => console.warn('Email error:', e.message));
             sendAdminOrderAlert(rows[0]).catch(e => console.warn('Admin email error:', e.message));
+            
+            // Send push notification to admin
+            const order = rows[0];
+            const customerName = order.address ? JSON.parse(order.address).name : 'Customer';
+            pushRouter.broadcastAdmin({
+                title: 'New Order Received! 🛍️',
+                body: `Order #${order.id} from ${customerName} for ₹${order.total}`,
+                url: '/admin/'
+            }).catch(e => console.warn('Admin push error:', e.message));
         }
 
         res.json({ success: true, orderId });

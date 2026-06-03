@@ -38,10 +38,13 @@ pool.query(`
         id SERIAL PRIMARY KEY,
         endpoint TEXT UNIQUE NOT NULL,
         subscription JSONB NOT NULL,
+        is_admin BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMPTZ DEFAULT NOW()
     )
-`).then(() => console.log('✅ push_subscriptions table ready'))
-  .catch(err => console.error('❌ Failed to create push_subscriptions table:', err.message));
+`).then(() => {
+    console.log('✅ push_subscriptions table ready');
+    return pool.query(`ALTER TABLE push_subscriptions ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;`);
+}).catch(err => console.error('❌ Failed to create push_subscriptions table:', err.message));
 
 // ── Endpoints ─────────────────────────────────────────────────────────────────
 router.get('/vapidPublicKey', (req, res) => {
@@ -110,6 +113,42 @@ router.broadcast = async function (payload) {
             [staleEndpoints]
         );
         console.log(`🧹 Removed ${staleEndpoints.length} stale push subscription(s)`);
+    }
+
+    return successCount;
+};
+
+// ── Broadcast helper for admins (used by order verified event) ───────────────
+router.broadcastAdmin = async function (payload) {
+    if (!vapidKeys.publicKey) return 0;
+
+    const { rows } = await pool.query('SELECT subscription FROM push_subscriptions WHERE is_admin = true');
+    if (!rows.length) return 0;
+
+    const payloadString = JSON.stringify(payload);
+    let successCount = 0;
+    const staleEndpoints = [];
+
+    await Promise.all(rows.map(async ({ subscription }) => {
+        const sub = typeof subscription === 'string' ? JSON.parse(subscription) : subscription;
+        try {
+            await webpush.sendNotification(sub, payloadString);
+            successCount++;
+        } catch (err) {
+            if (err.statusCode === 410 || err.statusCode === 404) {
+                staleEndpoints.push(sub.endpoint);
+            } else {
+                console.error('Admin Push send error:', err.message);
+            }
+        }
+    }));
+
+    if (staleEndpoints.length > 0) {
+        await pool.query(
+            'DELETE FROM push_subscriptions WHERE endpoint = ANY($1::text[]) AND is_admin = true',
+            [staleEndpoints]
+        );
+        console.log(`🧹 Removed ${staleEndpoints.length} stale admin push subscription(s)`);
     }
 
     return successCount;
