@@ -5,10 +5,15 @@
  */
 const nodemailer = require('nodemailer');
 
+// Force IPv4 resolution (Render does not support outbound IPv6 which Gmail defaults to)
+require('dns').setDefaultResultOrder('ipv4first');
+
+const port = parseInt(process.env.SMTP_PORT) || 587;
+
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT) || 587,
-    secure: process.env.SMTP_SECURE === 'true',
+    port: port,
+    secure: process.env.SMTP_SECURE === 'true' || port === 465,
     auth: {
         user: process.env.SMTP_USER || '',
         pass: process.env.SMTP_PASS || ''
