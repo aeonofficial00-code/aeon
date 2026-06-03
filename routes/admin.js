@@ -317,25 +317,5 @@ router.post('/push/send', auth, express.json(), async (req, res) => {
     }
 });
 
-// ── POST /api/admin/push/subscribe ───────────────────────────────────────────
-router.post('/push/subscribe', auth, express.json(), async (req, res) => {
-    const subscription = req.body;
-    if (!subscription || !subscription.endpoint) {
-        return res.status(400).json({ error: 'Invalid subscription object' });
-    }
-    try {
-        await pool.query(
-            `INSERT INTO push_subscriptions (endpoint, subscription, is_admin)
-             VALUES ($1, $2, true)
-             ON CONFLICT (endpoint) DO UPDATE SET subscription = EXCLUDED.subscription, is_admin = true`,
-            [subscription.endpoint, JSON.stringify(subscription)]
-        );
-        res.status(201).json({ message: 'Admin subscribed successfully' });
-    } catch (e) {
-        console.error('Admin subscribe error:', e);
-        res.status(500).json({ error: 'Failed to save admin subscription' });
-    }
-});
-
 module.exports = router;
 module.exports.validTokens = validTokens;

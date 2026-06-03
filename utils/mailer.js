@@ -16,7 +16,7 @@ const transporter = nodemailer.createTransport({
 });
 
 const FROM = process.env.SMTP_FROM || `"AEONV Jewellery" <${process.env.SMTP_USER}>`;
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL_NOTIFY || process.env.SMTP_USER;
+const ADMIN_EMAIL = process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL_NOTIFY || process.env.SMTP_USER;
 
 // ── Send order confirmation to customer ───────────────────────────────────────
 async function sendOrderConfirmation(order) {
