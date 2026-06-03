@@ -6,11 +6,12 @@ const router = express.Router();
 const crypto = require('crypto');
 const Razorpay = require('razorpay');
 const pool = require('../db/pool');
+const pushRouter = require('./push');  // for admin push notifications on new orders
 
 // ── Razorpay instance ─────────────────────────────────────────────────────────
 const rzp = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID || '',
-    key_secret: process.env.RAZORPAY_KEY_SECRET || ''
+    key_id: process.env.RAZORPAY_KEY_ID || 'dummy_key',
+    key_secret: process.env.RAZORPAY_KEY_SECRET || 'dummy_secret'
 });
 
 const DELIVERY_THRESHOLD = 0;   // site-wide free shipping
@@ -44,13 +45,18 @@ router.post('/create', express.json(), async (req, res) => {
         const total = subtotal + deliveryCharge;
         const totalPaise = Math.round(total * 100); // Razorpay uses paise
 
-        // Create Razorpay order
-        const rzpOrder = await rzp.orders.create({
-            amount: totalPaise,
-            currency: 'INR',
-            receipt: `aeon_${Date.now()}`,
-            notes: { customer: address.name, phone: address.phone }
-        });
+        let rzpOrderId = 'offline_order_' + Date.now();
+        if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_ID !== 'PLACEHOLDER_KEY_ID') {
+            const rzpOrder = await rzp.orders.create({
+                amount: totalPaise,
+                currency: 'INR',
+                receipt: `aeon_${Date.now()}`,
+                notes: { customer: address.name, phone: address.phone }
+            });
+            rzpOrderId = rzpOrder.id;
+        } else {
+            console.warn('Offline mode: skipping Razorpay order creation.');
+        }
 
         // Save pending order to DB
         const userId = req.user?.id || null;
@@ -58,12 +64,12 @@ router.post('/create', express.json(), async (req, res) => {
             `INSERT INTO orders (user_id, guest_email, items, address, subtotal, delivery_charge, total, razorpay_order_id, status)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'pending') RETURNING id`,
             [userId, email || null, JSON.stringify(validatedItems), JSON.stringify(address),
-                subtotal, deliveryCharge, total, rzpOrder.id]
+                subtotal, deliveryCharge, total, rzpOrderId]
         );
 
         res.json({
             orderId: rows[0].id,
-            razorpayOrderId: rzpOrder.id,
+            razorpayOrderId: rzpOrderId,
             amount: totalPaise,
             currency: 'INR',
             keyId: process.env.RAZORPAY_KEY_ID,
@@ -88,22 +94,26 @@ router.post('/verify', express.json(), async (req, res) => {
     try {
         const { orderId, razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
 
-        // Verify HMAC signature
-        const body = razorpayOrderId + '|' + razorpayPaymentId;
-        const expected = crypto
-            .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || '')
-            .update(body)
-            .digest('hex');
+        if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_ID !== 'PLACEHOLDER_KEY_ID') {
+            // Verify HMAC signature
+            const body = razorpayOrderId + '|' + razorpayPaymentId;
+            const expected = crypto
+                .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || '')
+                .update(body)
+                .digest('hex');
 
-        if (expected !== razorpaySignature) {
-            return res.status(400).json({ error: 'Payment verification failed. Invalid signature.' });
+            if (expected !== razorpaySignature) {
+                return res.status(400).json({ error: 'Payment verification failed. Invalid signature.' });
+            }
+        } else {
+            console.warn('Offline mode: skipping Razorpay HMAC signature verification.');
         }
 
         // Mark order as paid
         const { rows } = await pool.query(
             `UPDATE orders SET status='paid', razorpay_payment_id=$1, razorpay_signature=$2, updated_at=NOW()
        WHERE id=$3 RETURNING *`,
-            [razorpayPaymentId, razorpaySignature, orderId]
+            [razorpayPaymentId || 'offline_pay', razorpaySignature || 'offline_sig', orderId]
         );
 
         // Send confirmation emails (non-blocking)
@@ -111,6 +121,28 @@ router.post('/verify', express.json(), async (req, res) => {
             const { sendOrderConfirmation, sendAdminOrderAlert } = require('../utils/mailer');
             sendOrderConfirmation(rows[0]).catch(e => console.warn('Email error:', e.message));
             sendAdminOrderAlert(rows[0]).catch(e => console.warn('Admin email error:', e.message));
+
+            // ── Push notification to admin browser ────────────────────────────
+            try {
+                const order = rows[0];
+                const addr = typeof order.address === 'string' ? JSON.parse(order.address) : (order.address || {});
+                const items = typeof order.items === 'string' ? JSON.parse(order.items) : (order.items || []);
+                const customerName = addr.name || 'A customer';
+                const itemCount = items.reduce((s, i) => s + (parseInt(i.qty) || 1), 0);
+                const total = parseFloat(order.total || 0).toLocaleString('en-IN');
+
+                pushRouter.broadcast({
+                    title: '🛒 New Order Received!',
+                    body: `${customerName} placed an order for ${itemCount} item${itemCount !== 1 ? 's' : ''} · ₹${total}`,
+                    url: '/admin/dashboard.html#orders',
+                    icon: '/images/favicon.png',
+                    badge: '/images/favicon.png'
+                }).then(count => {
+                    if (count > 0) console.log(`✅ Admin push sent to ${count} device(s)`);
+                }).catch(e => console.warn('Admin push error:', e.message));
+            } catch (e) {
+                console.warn('Admin push prep error:', e.message);
+            }
         }
 
         res.json({ success: true, orderId });

@@ -1,5 +1,5 @@
 /* ============================================
-   AEONV Admin Dashboard – admin.js (base64)
+   GOODGOLD Admin Dashboard – admin.js (base64)
    ============================================ */
 
 const TOKEN_KEY = 'aeon_admin_token';
@@ -569,3 +569,167 @@ if (fileDrop) {
     fileDrop.addEventListener('dragleave', () => fileDrop.classList.remove('drag-over'));
     fileDrop.addEventListener('drop', e => { e.preventDefault(); fileDrop.classList.remove('drag-over'); handleImageFiles(e.dataTransfer.files); });
 }
+
+// ══════════════════════════════════════════════
+// ADMIN PUSH NOTIFICATION SUBSCRIPTION
+// Registers the service worker and subscribes admin
+// browser to receive push alerts on new orders.
+// ══════════════════════════════════════════════
+let _swRegistration = null;
+
+async function setupAdminPushNotifications() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        console.log('Push notifications not supported in this browser.');
+        return;
+    }
+
+    try {
+        // Register service worker
+        _swRegistration = await navigator.serviceWorker.register('/sw.js');
+        console.log('✅ Admin SW registered');
+
+        // Add a notification toggle button to the sidebar
+        injectPushToggleButton();
+
+        // Try to auto-subscribe silently if permission already granted
+        if (Notification.permission === 'granted') {
+            await subscribeAdminToPush(false);
+        }
+    } catch (err) {
+        console.warn('Admin push setup failed:', err.message);
+    }
+}
+
+function injectPushToggleButton() {
+    const sidebarBottom = document.querySelector('.sidebar-bottom');
+    if (!sidebarBottom || document.getElementById('admin-push-btn')) return;
+
+    const btn = document.createElement('button');
+    btn.id = 'admin-push-btn';
+    btn.style.cssText = `
+        background: transparent;
+        border: 1px solid rgba(201,169,110,0.2);
+        color: var(--text-muted);
+        font-size: 11px;
+        padding: 8px 14px;
+        border-radius: 6px;
+        cursor: pointer;
+        width: 100%;
+        margin-bottom: 8px;
+        transition: all 0.2s;
+        letter-spacing: 0.5px;
+    `;
+    btn.onmouseover = () => { btn.style.borderColor = 'rgba(201,169,110,0.5)'; btn.style.color = 'var(--gold)'; };
+    btn.onmouseout = () => { if (!btn.dataset.subscribed) { btn.style.borderColor = 'rgba(201,169,110,0.2)'; btn.style.color = 'var(--text-muted)'; } };
+    btn.onclick = toggleAdminPushSubscription;
+    sidebarBottom.insertBefore(btn, sidebarBottom.firstChild);
+
+    refreshPushButtonState();
+}
+
+async function refreshPushButtonState() {
+    const btn = document.getElementById('admin-push-btn');
+    if (!btn || !_swRegistration) return;
+
+    const sub = await _swRegistration.pushManager.getSubscription();
+    if (sub) {
+        btn.textContent = '🔔 Notifications On';
+        btn.dataset.subscribed = 'true';
+        btn.style.borderColor = 'rgba(92,184,92,0.4)';
+        btn.style.color = '#5cb85c';
+    } else {
+        btn.textContent = '🔕 Enable Notifications';
+        btn.dataset.subscribed = '';
+        btn.style.borderColor = 'rgba(201,169,110,0.2)';
+        btn.style.color = 'var(--text-muted)';
+    }
+}
+
+async function toggleAdminPushSubscription() {
+    if (!_swRegistration) return;
+    const sub = await _swRegistration.pushManager.getSubscription();
+    if (sub) {
+        await unsubscribeAdminFromPush(sub);
+    } else {
+        await subscribeAdminToPush(true);
+    }
+}
+
+async function subscribeAdminToPush(showPrompt = true) {
+    if (!_swRegistration) return;
+    try {
+        // Get VAPID public key
+        const keyRes = await fetch('/api/push/vapidPublicKey');
+        if (!keyRes.ok) throw new Error('Could not fetch VAPID key');
+        const { publicKey } = await keyRes.json();
+
+        // Request permission if needed
+        if (Notification.permission === 'default' && showPrompt) {
+            const perm = await Notification.requestPermission();
+            if (perm !== 'granted') {
+                showToast('⚠️ Notification permission denied.');
+                return;
+            }
+        } else if (Notification.permission === 'denied') {
+            showToast('🚫 Notifications are blocked. Enable them in browser settings.');
+            return;
+        }
+
+        // Subscribe to push
+        const subscription = await _swRegistration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(publicKey)
+        });
+
+        // Send subscription to server
+        const res = await fetch('/api/push/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(subscription)
+        });
+
+        if (res.ok) {
+            if (showPrompt) showToast('🔔 Admin push notifications enabled!');
+            console.log('✅ Admin subscribed to push');
+        } else {
+            throw new Error('Server failed to save subscription');
+        }
+    } catch (err) {
+        console.error('Push subscribe error:', err);
+        if (showPrompt) showToast('⚠️ Could not enable notifications: ' + err.message);
+    } finally {
+        refreshPushButtonState();
+    }
+}
+
+async function unsubscribeAdminFromPush(sub) {
+    try {
+        await fetch('/api/push/unsubscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ endpoint: sub.endpoint })
+        });
+        await sub.unsubscribe();
+        showToast('🔕 Notifications disabled.');
+    } catch (err) {
+        console.warn('Unsubscribe error:', err);
+    } finally {
+        refreshPushButtonState();
+    }
+}
+
+// Utility: convert VAPID key
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = atob(base64);
+    return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
+// Auto-init push setup after auth
+const _origCheckAuth = checkAuth;
+window.checkAuth = async function() {
+    await _origCheckAuth.call(this, ...arguments);
+    // Delay slightly to let the DOM settle after auth
+    setTimeout(setupAdminPushNotifications, 1000);
+};
