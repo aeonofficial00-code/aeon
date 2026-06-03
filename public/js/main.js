@@ -21,7 +21,11 @@ function saveCart() {
 }
 
 function addToCart(product) {
-  const existing = cart.find(i => i.id === product.id);
+  const existing = cart.find(i => 
+    i.id === product.id && 
+    i.selectedSize === product.selectedSize && 
+    i.selectedColor === product.selectedColor
+  );
   if (existing) {
     existing.qty = (existing.qty || 1) + 1;
   } else {
@@ -31,8 +35,8 @@ function addToCart(product) {
   showToast(`Added "${product.name}" to cart! 🛍️`);
 }
 
-function removeFromCart(id) {
-  cart = cart.filter(i => i.id !== id);
+function removeFromCart(id, selectedSize, selectedColor) {
+  cart = cart.filter(i => !(i.id === id && i.selectedSize === selectedSize && i.selectedColor === selectedColor));
   saveCart();
 }
 
@@ -46,8 +50,8 @@ function updateCartUI() {
   renderCartItems();
 }
 
-function changeQty(id, delta) {
-  const item = cart.find(i => i.id === id);
+function changeQty(id, selectedSize, selectedColor, delta) {
+  const item = cart.find(i => i.id === id && i.selectedSize === selectedSize && i.selectedColor === selectedColor);
   if (!item) return;
   item.qty = Math.max(1, (item.qty || 1) + delta);
   saveCart();
@@ -84,14 +88,14 @@ function renderCartItems() {
         ${item.selectedColor ? `<p style="font-size:10px;color:var(--gold);letter-spacing:1px;margin-bottom:8px;text-transform:uppercase;">Color: ${item.selectedColor}</p>` : ''}
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
           <div style="display:flex;align-items:center;gap:0;border:1px solid rgba(201,169,110,0.2);border-radius:20px;overflow:hidden;">
-            <button onclick="changeQty('${item.id}',-1)" style="background:none;border:none;color:var(--gold);width:28px;height:26px;cursor:pointer;font-size:14px;transition:background 0.2s;" onmouseover="this.style.background='rgba(201,169,110,0.1)'" onmouseout="this.style.background='none'">−</button>
+            <button onclick="changeQty('${item.id}', ${item.selectedSize ? `'${item.selectedSize}'` : 'null'}, ${item.selectedColor ? `'${item.selectedColor}'` : 'null'}, -1)" style="background:none;border:none;color:var(--gold);width:28px;height:26px;cursor:pointer;font-size:14px;transition:background 0.2s;" onmouseover="this.style.background='rgba(201,169,110,0.1)'" onmouseout="this.style.background='none'">−</button>
             <span style="font-size:12px;color:var(--text);min-width:20px;text-align:center;">${item.qty || 1}</span>
-            <button onclick="changeQty('${item.id}',1)" style="background:none;border:none;color:var(--gold);width:28px;height:26px;cursor:pointer;font-size:14px;transition:background 0.2s;" onmouseover="this.style.background='rgba(201,169,110,0.1)'" onmouseout="this.style.background='none'">+</button>
+            <button onclick="changeQty('${item.id}', ${item.selectedSize ? `'${item.selectedSize}'` : 'null'}, ${item.selectedColor ? `'${item.selectedColor}'` : 'null'}, 1)" style="background:none;border:none;color:var(--gold);width:28px;height:26px;cursor:pointer;font-size:14px;transition:background 0.2s;" onmouseover="this.style.background='rgba(201,169,110,0.1)'" onmouseout="this.style.background='none'">+</button>
           </div>
           <span style="font-size:13px;color:var(--gold);font-weight:600;">₹${linePrice.toLocaleString('en-IN')}</span>
         </div>
       </div>
-      <button onclick="removeFromCart('${item.id}')" style="background:none;border:none;color:rgba(255,255,255,0.2);font-size:16px;cursor:pointer;flex-shrink:0;padding:4px;transition:color 0.2s;" onmouseover="this.style.color='rgba(255,100,100,0.7)'" onmouseout="this.style.color='rgba(255,255,255,0.2)'">✕</button>
+      <button onclick="removeFromCart('${item.id}', ${item.selectedSize ? `'${item.selectedSize}'` : 'null'}, ${item.selectedColor ? `'${item.selectedColor}'` : 'null'})" style="background:none;border:none;color:rgba(255,255,255,0.2);font-size:16px;cursor:pointer;flex-shrink:0;padding:4px;transition:color 0.2s;" onmouseover="this.style.color='rgba(255,100,100,0.7)'" onmouseout="this.style.color='rgba(255,255,255,0.2)'">✕</button>
     </div>`;
   }).join('');
 
@@ -223,6 +227,7 @@ function renderProductCard(p) {
     : `<p class="product-price">₹${parseFloat(p.price).toLocaleString('en-IN')} <span>incl. taxes</span></p>`;
 
   const discount = p.is_on_sale && p.sale_price ? Math.round((1 - p.sale_price / p.price) * 100) : 0;
+  const hasOptions = (Array.isArray(p.available_sizes) && p.available_sizes.length > 0) || (Array.isArray(p.available_colors) && p.available_colors.length > 0);
 
   return `
     <div class="product-card reveal" onclick="location.href='product.html?id=${p.id}'" style="position:relative;">
@@ -234,6 +239,10 @@ function renderProductCard(p) {
           ${p.stock_status === 'out_of_stock' ? `
           <button class="btn-cart" style="background:rgba(217,83,79,0.1);color:#d9534f;cursor:not-allowed;" onclick="event.stopPropagation()">
             Sold Out
+          </button>
+          ` : hasOptions ? `
+          <button class="btn-cart" onclick="event.stopPropagation(); location.href='product.html?id=${p.id}'">
+            Select Options
           </button>
           ` : `
           <button class="btn-cart" onclick="event.stopPropagation(); addToCart(${JSON.stringify({ id: p.id, name: p.name, category: p.category, price: p.is_on_sale && p.sale_price ? p.sale_price : p.price, thumb: img }).replace(/"/g, '&quot;')})">
