@@ -151,8 +151,10 @@ function renderCartItems() {
         </div>
       </div>`;
 
-    // Append boxUpsellHtml to list.innerHTML so it scrolls with the cart items
-    list.innerHTML += boxUpsellHtml;
+    // Append boxUpsellHtml to list without re-parsing existing items
+    if (boxUpsellHtml) {
+      list.insertAdjacentHTML('beforeend', boxUpsellHtml);
+    }
 
     footer.innerHTML = `
       <div style="border-top:1px solid rgba(201,169,110,0.08);padding-top:14px;margin-bottom:12px;">
