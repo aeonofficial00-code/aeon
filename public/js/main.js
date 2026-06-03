@@ -23,8 +23,8 @@ function saveCart() {
 function addToCart(product) {
   const existing = cart.find(i => 
     i.id === product.id && 
-    i.selectedSize === product.selectedSize && 
-    i.selectedColor === product.selectedColor
+    (i.selectedSize || null) === (product.selectedSize || null) && 
+    (i.selectedColor || null) === (product.selectedColor || null)
   );
   if (existing) {
     existing.qty = (existing.qty || 1) + 1;
@@ -36,7 +36,7 @@ function addToCart(product) {
 }
 
 function removeFromCart(id, selectedSize, selectedColor) {
-  cart = cart.filter(i => !(i.id === id && i.selectedSize === selectedSize && i.selectedColor === selectedColor));
+  cart = cart.filter(i => !(i.id === id && (i.selectedSize || null) === (selectedSize || null) && (i.selectedColor || null) === (selectedColor || null)));
   saveCart();
 }
 
@@ -51,7 +51,7 @@ function updateCartUI() {
 }
 
 function changeQty(id, selectedSize, selectedColor, delta) {
-  const item = cart.find(i => i.id === id && i.selectedSize === selectedSize && i.selectedColor === selectedColor);
+  const item = cart.find(i => i.id === id && (i.selectedSize || null) === (selectedSize || null) && (i.selectedColor || null) === (selectedColor || null));
   if (!item) return;
   item.qty = Math.max(1, (item.qty || 1) + delta);
   saveCart();
