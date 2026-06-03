@@ -5,11 +5,10 @@
  */
 const nodemailer = require('nodemailer');
 
-// Force IPv4 resolution (Render does not support outbound IPv6 which Gmail defaults to)
+// Force IPv4 resolution
 require('dns').setDefaultResultOrder('ipv4first');
 
 const port = parseInt(process.env.SMTP_PORT) || 587;
-
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
     port: port,
@@ -23,9 +22,32 @@ const transporter = nodemailer.createTransport({
 const FROM = process.env.SMTP_FROM || `"AEONV Jewellery" <${process.env.SMTP_USER}>`;
 const ADMIN_EMAIL = process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL_NOTIFY || process.env.SMTP_USER;
 
+// Send via Resend API (HTTPS bypasses Render SMTP block)
+async function sendViaResend(to, subject, html) {
+    // Use the domain if verified on Resend, or a fallback. 
+    // Resend will reject @gmail.com, so we use @aeonv.in
+    const fromStr = `AEONV Jewellery <orders@aeonv.in>`;
+    
+    const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            from: fromStr,
+            to: Array.isArray(to) ? to : to.split(',').map(e => e.trim()),
+            subject,
+            html
+        })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Resend error');
+    return data;
+}
+
 // ── Send order confirmation to customer ───────────────────────────────────────
 async function sendOrderConfirmation(order) {
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) return; // skip if not configured
     const to = order.address?.email || order.guest_email;
     if (!to) return;
 
@@ -76,29 +98,35 @@ async function sendOrderConfirmation(order) {
             <p style="margin:28px 0 0;font-size:12px;color:#666;text-align:center;">We'll ship your order within 2–5 business days.<br/>Crafted with ♥ in India</p>
         </div>
     </div>`;
+    const subject = `✅ Order Confirmed – #${order.id?.slice(0, 8).toUpperCase()} | AEONV Jewellery`;
 
-    await transporter.sendMail({
-        from: FROM, to,
-        subject: `✅ Order Confirmed – #${order.id?.slice(0, 8).toUpperCase()} | AEONV Jewellery`,
-        html
-    });
+    if (process.env.RESEND_API_KEY) {
+        return sendViaResend(to, subject, html);
+    }
+
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) return;
+    await transporter.sendMail({ from: FROM, to, subject, html });
 }
 
 // ── Send new order alert to admin ─────────────────────────────────────────────
 async function sendAdminOrderAlert(order) {
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS || !ADMIN_EMAIL) return;
+    if (!ADMIN_EMAIL) return;
+    
     const addr = order.address || {};
-    await transporter.sendMail({
-        from: FROM,
-        to: ADMIN_EMAIL,
-        subject: `🛒 New Order #${order.id?.slice(0, 8).toUpperCase()} – ₹${parseFloat(order.total || 0).toLocaleString('en-IN')}`,
-        html: `<p><strong>New order received!</strong></p>
+    const subject = `🛒 New Order #${order.id?.slice(0, 8).toUpperCase()} – ₹${parseFloat(order.total || 0).toLocaleString('en-IN')}`;
+    const html = `<p><strong>New order received!</strong></p>
                <p><strong>Customer:</strong> ${addr.name} | ${addr.phone}</p>
                <p><strong>Total:</strong> ₹${parseFloat(order.total || 0).toLocaleString('en-IN')}</p>
                <p><strong>Address:</strong> ${addr.line1}, ${addr.city}, ${addr.state} – ${addr.pincode}</p>
                <p><strong>Items:</strong> ${order.items?.length || 0}</p>
-               <p><a href="${process.env.APP_URL || ''}/admin">View in Admin Dashboard →</a></p>`
-    });
+               <p><a href="${process.env.APP_URL || ''}/admin">View in Admin Dashboard →</a></p>`;
+
+    if (process.env.RESEND_API_KEY) {
+        return sendViaResend(ADMIN_EMAIL, subject, html);
+    }
+
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) return;
+    await transporter.sendMail({ from: FROM, to: ADMIN_EMAIL, subject, html });
 }
 
 module.exports = { sendOrderConfirmation, sendAdminOrderAlert };
