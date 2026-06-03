@@ -1023,6 +1023,7 @@ button {
 }
 
 .product-price {
+  font-family: var(--font-body);
   font-size: 18px;
   font-weight: 600;
   color: var(--gold);
@@ -1437,8 +1438,9 @@ footer {
 .cart-total {
   display: flex;
   justify-content: space-between;
-  font-family: var(--font-heading);
+  font-family: var(--font-body);
   font-size: 20px;
+  font-weight: 600;
   color: #fff;
   margin-bottom: 20px;
 }
@@ -1622,8 +1624,9 @@ footer {
 }
 
 .detail-price {
-  font-family: var(--font-heading);
+  font-family: var(--font-body);
   font-size: 36px;
+  font-weight: 600;
   color: var(--gold);
   margin-bottom: 32px;
   display: flex;
