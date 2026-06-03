@@ -1,5 +1,5 @@
 /* ============================================
-   GOODGOLD Admin Dashboard – admin.js (base64)
+   AEONV Admin Dashboard – admin.js (base64)
    ============================================ */
 
 const TOKEN_KEY = 'aeon_admin_token';
@@ -571,64 +571,117 @@ if (fileDrop) {
 }
 
 // ══════════════════════════════════════════════
-// ADMIN PUSH NOTIFICATION SUBSCRIPTION
-// Registers the service worker and subscribes admin
-// browser to receive push alerts on new orders.
+// LIVE ORDER ALERTS  (Server-Sent Events)
+// Replaces web push — no FCM, no service worker,
+// no browser permission required. Works on HTTPS.
 // ══════════════════════════════════════════════
-let _swRegistration = null;
+let _sseConn = null;
+let _sseRetryTimer = null;
+let _newOrderCount = 0;
 
-async function setupAdminPushNotifications() {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        console.log('Push notifications not supported in this browser.');
-        return;
-    }
+function initLiveOrderAlerts() {
+    const token = getToken();
+    if (!token) return;
 
+    // Inject the sidebar indicator button
+    injectLiveAlertButton();
+
+    // Connect to SSE
+    connectSSE(token);
+}
+
+function connectSSE(token) {
+    if (_sseConn) { try { _sseConn.close(); } catch {} }
+
+    const url = `/api/admin/events?token=${encodeURIComponent(token)}`;
+    _sseConn = new EventSource(url);
+
+    _sseConn.addEventListener('new_order', (e) => {
+        try {
+            const order = JSON.parse(e.data);
+            handleNewOrderAlert(order);
+        } catch {}
+    });
+
+    _sseConn.onopen = () => {
+        console.log('✅ Live order alerts connected');
+        updateLiveButton('connected');
+        clearTimeout(_sseRetryTimer);
+        _newOrderCount = 0;
+        updateLiveButton('connected');
+    };
+
+    _sseConn.onerror = () => {
+        updateLiveButton('reconnecting');
+        _sseConn.close();
+        // Reconnect after 5 seconds
+        _sseRetryTimer = setTimeout(() => connectSSE(token), 5000);
+    };
+}
+
+function handleNewOrderAlert(order) {
+    _newOrderCount++;
+
+    // Play a subtle chime using Web Audio API (no file needed)
     try {
-        // Unregister any stale service workers first to prevent conflicts
-        const existingRegs = await navigator.serviceWorker.getRegistrations();
-        for (const reg of existingRegs) {
-            if (reg.active && reg.active.scriptURL.includes('/sw.js')) {
-                // Reuse if already on /sw.js
-                _swRegistration = reg;
-                break;
-            }
-        }
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        [523, 659, 784].forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.frequency.value = freq;
+            osc.type = 'sine';
+            gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.15);
+            gain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + i * 0.15 + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.15 + 0.4);
+            osc.start(ctx.currentTime + i * 0.15);
+            osc.stop(ctx.currentTime + i * 0.15 + 0.4);
+        });
+    } catch {}
 
-        // Register fresh if none found
-        if (!_swRegistration) {
-            _swRegistration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-        }
+    // Show a prominent toast
+    const total = parseFloat(order.total || 0).toLocaleString('en-IN');
+    showOrderToast(`🛒 New Order! ${order.customerName} · ₹${total}`);
 
-        // Wait for SW to be active
-        if (_swRegistration.installing || _swRegistration.waiting) {
-            await new Promise(resolve => {
-                const sw = _swRegistration.installing || _swRegistration.waiting;
-                sw.addEventListener('statechange', function handler() {
-                    if (sw.state === 'activated') { sw.removeEventListener('statechange', handler); resolve(); }
-                });
-                // Timeout fallback
-                setTimeout(resolve, 3000);
-            });
-        }
+    // Update the sidebar button badge
+    updateLiveButton('new_order');
 
-        console.log('✅ Admin SW ready');
-        injectPushToggleButton();
-
-        // Silently re-subscribe if permission already granted (e.g. after page reload)
-        if (Notification.permission === 'granted' && location.protocol === 'https:') {
-            await subscribeAdminToPush(false);
-        }
-    } catch (err) {
-        console.warn('Admin push setup failed:', err.message);
+    // If user is on orders tab, refresh it
+    if (currentTab === 'orders') {
+        setTimeout(() => { if (typeof loadAdminOrders === 'function') loadAdminOrders(); }, 800);
     }
 }
 
-function injectPushToggleButton() {
+function showOrderToast(msg) {
+    let c = document.getElementById('admin-toast-container');
+    if (!c) { c = document.createElement('div'); c.id = 'admin-toast-container'; c.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:10px;'; document.body.appendChild(c); }
+
+    const t = document.createElement('div');
+    t.style.cssText = `
+        background: linear-gradient(135deg, rgba(17,17,17,0.98), rgba(30,25,10,0.98));
+        border: 1px solid rgba(201,169,110,0.5);
+        color: #C9A96E;
+        padding: 16px 20px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 600;
+        box-shadow: 0 8px 40px rgba(0,0,0,0.5), 0 0 20px rgba(201,169,110,0.1);
+        animation: fadeUp 0.4s ease;
+        cursor: pointer;
+        max-width: 320px;
+    `;
+    t.textContent = msg;
+    t.onclick = () => { window.showTab('orders'); t.remove(); _newOrderCount = 0; updateLiveButton('connected'); };
+    c.appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; t.style.transition = '0.4s'; setTimeout(() => t.remove(), 400); }, 6000);
+}
+
+function injectLiveAlertButton() {
     const sidebarBottom = document.querySelector('.sidebar-bottom');
-    if (!sidebarBottom || document.getElementById('admin-push-btn')) return;
+    if (!sidebarBottom || document.getElementById('admin-live-btn')) return;
 
     const btn = document.createElement('button');
-    btn.id = 'admin-push-btn';
+    btn.id = 'admin-live-btn';
     btn.style.cssText = `
         background: transparent;
         border: 1px solid rgba(201,169,110,0.2);
@@ -641,144 +694,44 @@ function injectPushToggleButton() {
         margin-bottom: 8px;
         transition: all 0.2s;
         letter-spacing: 0.5px;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     `;
-    btn.onmouseover = () => { btn.style.borderColor = 'rgba(201,169,110,0.5)'; btn.style.color = 'var(--gold)'; };
-    btn.onmouseout = () => { if (!btn.dataset.subscribed) { btn.style.borderColor = 'rgba(201,169,110,0.2)'; btn.style.color = 'var(--text-muted)'; } };
-    btn.onclick = toggleAdminPushSubscription;
+    btn.onclick = () => { window.showTab('orders'); _newOrderCount = 0; updateLiveButton('connected'); };
     sidebarBottom.insertBefore(btn, sidebarBottom.firstChild);
-    refreshPushButtonState();
+    updateLiveButton('connecting');
 }
 
-async function refreshPushButtonState() {
-    const btn = document.getElementById('admin-push-btn');
-    if (!btn || !_swRegistration) return;
+function updateLiveButton(state) {
+    const btn = document.getElementById('admin-live-btn');
+    if (!btn) return;
 
-    const sub = await _swRegistration.pushManager.getSubscription().catch(() => null);
-    if (sub) {
-        btn.textContent = '🔔 Notifications On';
-        btn.dataset.subscribed = 'true';
-        btn.style.borderColor = 'rgba(92,184,92,0.4)';
+    const dot = `<span style="width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0;"></span>`;
+
+    if (state === 'connected' && _newOrderCount === 0) {
+        btn.innerHTML = `<span style="width:7px;height:7px;border-radius:50%;background:#5cb85c;display:inline-block;flex-shrink:0;box-shadow:0 0 6px #5cb85c;animation:pulse 2s infinite;"></span> Live Alerts On`;
+        btn.style.borderColor = 'rgba(92,184,92,0.3)';
         btn.style.color = '#5cb85c';
+    } else if (state === 'new_order' || _newOrderCount > 0) {
+        btn.innerHTML = `<span style="width:7px;height:7px;border-radius:50%;background:#C9A96E;display:inline-block;flex-shrink:0;animation:pulse 0.8s infinite;"></span> ${_newOrderCount} New Order${_newOrderCount > 1 ? 's' : ''} →`;
+        btn.style.borderColor = 'rgba(201,169,110,0.5)';
+        btn.style.color = '#C9A96E';
+    } else if (state === 'reconnecting') {
+        btn.innerHTML = `<span style="width:7px;height:7px;border-radius:50%;background:#f0ad4e;display:inline-block;flex-shrink:0;"></span> Reconnecting…`;
+        btn.style.borderColor = 'rgba(240,173,78,0.3)';
+        btn.style.color = '#f0ad4e';
     } else {
-        btn.textContent = '🔕 Enable Notifications';
-        btn.dataset.subscribed = '';
+        btn.innerHTML = `<span style="width:7px;height:7px;border-radius:50%;background:#888;display:inline-block;flex-shrink:0;"></span> Connecting…`;
         btn.style.borderColor = 'rgba(201,169,110,0.2)';
         btn.style.color = 'var(--text-muted)';
     }
 }
 
-async function toggleAdminPushSubscription() {
-    if (!_swRegistration) { showToast('⚠️ Service worker not ready. Try refreshing.'); return; }
-    const sub = await _swRegistration.pushManager.getSubscription().catch(() => null);
-    if (sub) {
-        await unsubscribeAdminFromPush(sub);
-    } else {
-        await subscribeAdminToPush(true);
-    }
-}
-
-async function subscribeAdminToPush(showPrompt = true) {
-    if (!_swRegistration) return;
-
-    // ── HTTPS check ───────────────────────────────────────────────────────────
-    // Push subscriptions require HTTPS (except localhost for dev)
-    const isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-    if (!isSecure) {
-        if (showPrompt) showToast('🔒 Push notifications require HTTPS. Deploy to a secure host to enable.');
-        console.warn('Push blocked: page is not HTTPS');
-        return;
-    }
-
-    try {
-        // Get VAPID public key from server
-        const keyRes = await fetch('/api/push/vapidPublicKey');
-        if (!keyRes.ok) throw new Error('VAPID key not configured on server');
-        const { publicKey } = await keyRes.json();
-        if (!publicKey) throw new Error('Empty VAPID public key returned');
-
-        // Request browser permission if needed
-        if (Notification.permission === 'default' && showPrompt) {
-            const perm = await Notification.requestPermission();
-            if (perm !== 'granted') {
-                showToast('⚠️ Notification permission denied.');
-                return;
-            }
-        } else if (Notification.permission === 'denied') {
-            showToast('🚫 Notifications are blocked in browser settings. Click the 🔒 icon in the address bar to allow.');
-            return;
-        }
-
-        // Make sure SW is active before subscribing
-        await navigator.serviceWorker.ready;
-
-        // Clear any existing stale subscription first
-        const existing = await _swRegistration.pushManager.getSubscription().catch(() => null);
-        if (existing) await existing.unsubscribe().catch(() => {});
-
-        // Subscribe
-        const subscription = await _swRegistration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(publicKey)
-        });
-
-        // Save to server
-        const res = await fetch('/api/push/subscribe', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(subscription)
-        });
-
-        if (res.ok) {
-            if (showPrompt) showToast('🔔 Admin push notifications enabled!');
-            console.log('✅ Admin subscribed to push');
-        } else {
-            throw new Error('Server failed to save subscription');
-        }
-    } catch (err) {
-        console.error('Push subscribe error:', err);
-        if (showPrompt) {
-            // Friendly error messages for common failures
-            let msg = err.message;
-            if (msg.includes('push service') || msg.includes('Registration failed')) {
-                msg = 'Browser push service unavailable. Ensure site is on HTTPS.';
-            } else if (msg.includes('VAPID')) {
-                msg = 'VAPID keys not configured. Set VAPID_PUBLIC_KEY & VAPID_PRIVATE_KEY in .env';
-            }
-            showToast('⚠️ ' + msg);
-        }
-    } finally {
-        refreshPushButtonState();
-    }
-}
-
-async function unsubscribeAdminFromPush(sub) {
-    try {
-        await fetch('/api/push/unsubscribe', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ endpoint: sub.endpoint })
-        });
-        await sub.unsubscribe();
-        showToast('🔕 Notifications disabled.');
-    } catch (err) {
-        console.warn('Unsubscribe error:', err);
-    } finally {
-        refreshPushButtonState();
-    }
-}
-
-// Utility: convert URL-safe base64 VAPID key to Uint8Array
-function urlBase64ToUint8Array(base64String) {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-    const rawData = atob(base64);
-    return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
-}
-
-// Auto-init push setup after auth
+// Auto-init after auth (called by dashboard.html inline script)
 const _origCheckAuth = checkAuth;
 window.checkAuth = async function () {
     await _origCheckAuth.call(this, ...arguments);
-    setTimeout(setupAdminPushNotifications, 1200);
+    setTimeout(initLiveOrderAlerts, 1200);
 };
-
