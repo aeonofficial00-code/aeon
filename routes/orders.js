@@ -111,24 +111,6 @@ router.post('/verify', express.json(), async (req, res) => {
             const { sendOrderConfirmation, sendAdminOrderAlert } = require('../utils/mailer');
             sendOrderConfirmation(rows[0]).catch(e => console.warn('Email error:', e.message));
             sendAdminOrderAlert(rows[0]).catch(e => console.warn('Admin email error:', e.message));
-
-            // ── Real-time admin alert via SSE ─────────────────────────────────
-            try {
-                const order = rows[0];
-                const addr = typeof order.address === 'string' ? JSON.parse(order.address) : (order.address || {});
-                const items = typeof order.items === 'string' ? JSON.parse(order.items) : (order.items || []);
-                if (typeof global.broadcastAdminEvent === 'function') {
-                    global.broadcastAdminEvent('new_order', {
-                        id: order.id,
-                        customerName: addr.name || 'A customer',
-                        total: parseFloat(order.total || 0),
-                        itemCount: items.reduce((s, i) => s + (parseInt(i.qty) || 1), 0),
-                        timestamp: new Date().toISOString()
-                    });
-                }
-            } catch (e) {
-                console.warn('SSE broadcast error:', e.message);
-            }
         }
 
         res.json({ success: true, orderId });

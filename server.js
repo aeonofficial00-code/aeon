@@ -126,51 +126,6 @@ app.use('/api/coupons', couponsRouter);
 app.use('/api/preorders', preordersRouter);
 app.use('/api/push', pushRouter);
 
-// ── Server-Sent Events for admin real-time alerts ─────────────────────────────
-// sseClients is a global Set so orders.js can push events into it
-global.sseClients = global.sseClients || new Set();
-
-app.get('/api/admin/events', (req, res) => {
-    // Simple admin token check (same as /api/admin/* routes)
-    const token = req.headers['x-admin-token'] || req.query.token;
-    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'aeon2024';
-    const jwt = require('jsonwebtoken');
-    const JWT_SECRET = process.env.JWT_SECRET || 'aeon-admin-secret';
-    try {
-        const payload = jwt.verify(token, JWT_SECRET);
-        if (!payload.admin) return res.status(401).end();
-    } catch {
-        return res.status(401).end();
-    }
-
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no'); // Nginx / Render: disable buffering
-    res.flushHeaders();
-
-    // Send a heartbeat every 25s to keep the connection alive
-    const heartbeat = setInterval(() => {
-        res.write(': heartbeat\n\n');
-    }, 25000);
-
-    global.sseClients.add(res);
-
-    req.on('close', () => {
-        clearInterval(heartbeat);
-        global.sseClients.delete(res);
-    });
-});
-
-// Helper to broadcast an event to all connected admin SSE clients
-global.broadcastAdminEvent = function(eventName, data) {
-    const payload = `event: ${eventName}\ndata: ${JSON.stringify(data)}\n\n`;
-    for (const client of global.sseClients) {
-        try { client.write(payload); } catch {}
-    }
-};
-
-
 // ── Page routes ───────────────────────────────────────────────────────────────
 app.get('/checkout', (req, res) => res.sendFile(path.join(__dirname, 'public', 'checkout.html')));
 app.get('/order-success', (req, res) => res.sendFile(path.join(__dirname, 'public', 'order-success.html')));
