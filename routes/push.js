@@ -26,7 +26,7 @@ if (!vapidKeys.publicKey || !vapidKeys.privateKey) {
 
 if (vapidKeys.publicKey && vapidKeys.privateKey) {
     webpush.setVapidDetails(
-        'mailto:admin@aeon.com',
+        process.env.VAPID_MAILTO || `mailto:admin@aeonv.in`,
         vapidKeys.publicKey,
         vapidKeys.privateKey
     );
