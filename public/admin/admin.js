@@ -50,6 +50,8 @@ async function apiFetch(url, opts = {}) {
 
 // ── INIT ─────────────────────────────────────
 async function loadDashboard() {
+    document.body.style.opacity = '1';
+    document.body.style.pointerEvents = 'auto';
     await Promise.all([loadProducts(), loadCategories(), loadDashStats()]);
 }
 
