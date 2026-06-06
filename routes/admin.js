@@ -35,6 +35,7 @@ const validTokens = new Map();
 function auth(req, res, next) {
     const token = req.headers['x-admin-token'] || req.query.token;
     if (!token) return res.status(401).json({ error: 'No token' });
+    if (validTokens.has(token)) return next();
     if (req.session?.adminToken && req.session.adminToken === token) return next();
     if (req.session?.isAdmin) return next();
     if (req.isAuthenticated?.() && ADMIN_EMAILS.includes((req.user?.email || '').toLowerCase())) return next();
@@ -80,7 +81,12 @@ router.post('/login', (req, res) => {
 
 // ── POST /api/admin/logout ────────────────────────────────────────────────────
 router.post('/logout', auth, (req, res) => {
-    validTokens.delete(req.headers['x-admin-token']);
+    const token = req.headers['x-admin-token'];
+    if (token) validTokens.delete(token);
+    if (req.session) {
+        req.session.isAdmin = false;
+        req.session.adminToken = null;
+    }
     res.json({ message: 'Logged out' });
 });
 

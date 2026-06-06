@@ -26,7 +26,7 @@ async function checkAuth() {
             }
         } catch (e) { }
     }
-    if (!token) { window.location.href = '/admin/'; return; }
+    if (!token) { window.location.replace('/admin/'); return; }
     loadDashboard();
 }
 
@@ -35,7 +35,7 @@ function getToken() { return sessionStorage.getItem(TOKEN_KEY); }
 function logout() {
     fetch('/api/admin/logout', { method: 'POST', headers: { 'x-admin-token': getToken() } }).catch(() => { });
     sessionStorage.removeItem(TOKEN_KEY);
-    window.location.href = '/admin/';
+    window.location.replace('/admin/');
 }
 
 // ── API ──────────────────────────────────────
@@ -44,7 +44,7 @@ async function apiFetch(url, opts = {}) {
         ...opts,
         headers: { 'x-admin-token': getToken(), 'Content-Type': 'application/json', ...(opts.headers || {}) }
     });
-    if (res.status === 401) { window.location.href = '/admin/'; return null; }
+    if (res.status === 401) { window.location.replace('/admin/'); return null; }
     return res;
 }
 
@@ -88,6 +88,7 @@ function showTab(tab) {
 async function loadProducts() {
     try {
         const res = await apiFetch('/api/admin/products');
+        if (!res) return;
         allProducts = await res.json();
         renderProductsTable(allProducts);
     } catch (e) { showToast('Error loading products.'); }
@@ -410,6 +411,7 @@ async function submitProduct() {
 async function loadCategories() {
     try {
         const res = await apiFetch('/api/admin/categories');
+        if (!res) return;
         allCategories = await res.json();
         renderCategoriesTable(allCategories);
     } catch (e) { showToast('Error loading categories.'); }
@@ -506,6 +508,7 @@ async function submitCategory() {
 async function loadUsers() {
     try {
         const res = await apiFetch('/api/admin/users');
+        if (!res) return;
         const users = await res.json();
         const tbody = document.getElementById('users-tbody');
         if (!tbody) return;
