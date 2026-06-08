@@ -143,6 +143,23 @@ router.get('/:id', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ── GET /api/orders/:id/invoice ───────────────────────────────────────────────
+router.get('/:id/invoice', async (req, res) => {
+    try {
+        const { rows } = await pool.query(`SELECT * FROM orders WHERE id=$1`, [req.params.id]);
+        if (!rows.length) return res.status(404).send('Invoice not found');
+        
+        const { generateInvoicePdf } = require('../utils/invoice');
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename=AEONV_Invoice_${req.params.id}.pdf`);
+        
+        generateInvoicePdf(rows[0], res);
+    } catch (err) { 
+        console.error('Invoice error:', err);
+        res.status(500).send('Error generating invoice'); 
+    }
+});
+
 // ── POST /api/orders/:id/cancel ───────────────────────────────────────────────
 router.post('/:id/cancel', async (req, res) => {
     if (!req.user) return res.status(401).json({ error: 'Sign in to cancel orders' });

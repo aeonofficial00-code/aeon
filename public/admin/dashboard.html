@@ -1216,6 +1216,7 @@
                         ${['pending', 'processing', 'shipped', 'delivered', 'cancelled'].map(s => `<option value="${s}" ${s === o.status ? 'selected' : ''}>${s}</option>`).join('')}
                     </select>
                     <button onclick="updateOrderStatusFromDetail('${o.id}')" class="btn btn-gold" style="white-space:nowrap;">Save Status</button>
+                    <a href="/api/orders/${o.id}/invoice" target="_blank" class="btn btn-outline" style="white-space:nowrap;text-decoration:none;display:flex;align-items:center;justify-content:center;padding:10px 14px;">Download Invoice</a>
                 </div>
             `;
             document.getElementById('order-detail-modal').style.display = 'flex';

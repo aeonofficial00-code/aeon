@@ -99,6 +99,9 @@ async function sendOrderConfirmation(order) {
                 <p style="margin:0 0 6px;font-size:10px;letter-spacing:2px;color:#888;text-transform:uppercase;">Delivery Address</p>
                 <p style="margin:0;color:#E8E0D0;line-height:1.7;">${addr.name}<br/>${addr.line1}${addr.line2 ? ', ' + addr.line2 : ''}<br/>${addr.city}, ${addr.state} – ${addr.pincode}</p>
             </div>
+            <div style="margin-top:24px;text-align:center;">
+                <a href="${process.env.APP_URL || 'https://aeonv.in'}/api/orders/${order.id}/invoice" style="display:inline-block;background:#C9A96E;color:#0A0A0A;padding:12px 24px;text-decoration:none;border-radius:4px;font-weight:bold;letter-spacing:1px;font-size:13px;">Download Invoice</a>
+            </div>
             <p style="margin:28px 0 0;font-size:12px;color:#666;text-align:center;">We'll ship your order within 2–5 business days.<br/>Crafted with ♥ in India</p>
         </div>
     </div>`;
@@ -168,7 +171,8 @@ async function sendAdminOrderAlert(order) {
             </div>
 
             <div style="margin-top:32px;text-align:center;">
-                <a href="${process.env.APP_URL || ''}/admin" style="display:inline-block;background:#111;color:#C9A96E;padding:12px 24px;text-decoration:none;border-radius:4px;font-weight:bold;">View in Admin Dashboard</a>
+                <a href="${process.env.APP_URL || 'https://aeonv.in'}/api/orders/${order.id}/invoice" style="display:inline-block;background:#C9A96E;color:#0A0A0A;padding:12px 24px;text-decoration:none;border-radius:4px;font-weight:bold;margin-right:8px;">Download Invoice</a>
+                <a href="${process.env.APP_URL || 'https://aeonv.in'}/admin" style="display:inline-block;background:#111;color:#C9A96E;padding:12px 24px;text-decoration:none;border-radius:4px;font-weight:bold;">View in Admin</a>
             </div>
         </div>
     </div>`;
