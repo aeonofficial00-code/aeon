@@ -411,6 +411,11 @@
                     const tracking = await trackRes.json();
                     if (tracking.states && tracking.states.length > 0) {
                         renderTrackingTimeline(tracking.states);
+                        
+                        // Auto-sync the UI flowchart if it's delivered
+                        if (tracking.states[0].status && tracking.states[0].status.toLowerCase() === 'delivered') {
+                            updateStepper('delivered', order);
+                        }
                     }
                 }
             } catch (err) {
