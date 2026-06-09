@@ -60,11 +60,45 @@ router.patch('/orders/:id/status', auth, express.json(), async (req, res) => {
     const { status, tracking_id } = req.body;
     if (!allowed.includes(status)) return res.status(400).json({ error: 'Invalid status' });
     try {
-        await pool.query(
-            `UPDATE orders SET status=$1, tracking_id=COALESCE($2, tracking_id), updated_at=NOW() WHERE id=$3`,
+        const { rows } = await pool.query(
+            `UPDATE orders SET status=$1, tracking_id=COALESCE($2, tracking_id), updated_at=NOW() WHERE id=$3 RETURNING *`,
             [status, tracking_id || null, req.params.id]
         );
-        res.json({ success: true });
+        if (!rows.length) return res.status(404).json({ error: 'Order not found' });
+
+        // Auto-sync with ParcelsApp immediately upon admin save
+        const finalTrackingId = tracking_id || rows[0].tracking_id;
+        const apiKey = process.env.PARCELSAPP_API_KEY;
+        if (finalTrackingId && apiKey) {
+            try {
+                const resp = await fetch('https://parcelsapp.com/api/v3/shipments/tracking', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        shipments: [{ trackingId: finalTrackingId, destinationCountry: 'India' }],
+                        language: 'en',
+                        apiKey
+                    })
+                });
+                const data = await resp.json();
+                const shipment = data.shipments && data.shipments[0];
+                const states = shipment && shipment.states ? shipment.states : null;
+
+                if (shipment && shipment.status === 'delivered') {
+                    await pool.query("UPDATE orders SET status='delivered' WHERE id=$1", [req.params.id]);
+                    rows[0].status = 'delivered';
+                }
+
+                await pool.query(
+                    `UPDATE orders SET tracking_data=$1, tracking_updated_at=NOW() WHERE id=$2`,
+                    [JSON.stringify(states), req.params.id]
+                );
+            } catch (err) {
+                console.error('Admin tracking sync error:', err.message);
+            }
+        }
+
+        res.json({ message: 'Status updated', order: rows[0] });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
