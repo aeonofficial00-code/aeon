@@ -315,6 +315,8 @@ button {
   align-items: center;
   transition: all 0.5s ease;
   padding: 0 40px;
+  background: linear-gradient(to bottom, rgba(10,10,10,0.9) 0%, rgba(10,10,10,0.4) 100%);
+  backdrop-filter: blur(8px);
 }
 
 #navbar.scrolled {
@@ -349,9 +351,6 @@ button {
   align-items: center;
   gap: 40px;
   list-style: none;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
 }
 
 .nav-links a {
