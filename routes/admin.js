@@ -60,10 +60,21 @@ router.patch('/orders/:id/status', auth, express.json(), async (req, res) => {
     const { status, tracking_id } = req.body;
     if (!allowed.includes(status)) return res.status(400).json({ error: 'Invalid status' });
     try {
-        const { rows } = await pool.query(
-            `UPDATE orders SET status=$1, tracking_id=COALESCE($2, tracking_id), updated_at=NOW() WHERE id=$3 RETURNING *`,
-            [status, tracking_id || null, req.params.id]
-        );
+        let queryStr = `UPDATE orders SET status=$1, updated_at=NOW() WHERE id=$2 RETURNING *`;
+        let queryParams = [status, req.params.id];
+
+        if (req.body.hasOwnProperty('tracking_id')) {
+            if (!tracking_id) {
+                // Wipe tracking ID and existing tracking data
+                queryStr = `UPDATE orders SET status=$1, tracking_id=NULL, tracking_data=NULL, tracking_updated_at=NULL, updated_at=NOW() WHERE id=$2 RETURNING *`;
+                queryParams = [status, req.params.id];
+            } else {
+                queryStr = `UPDATE orders SET status=$1, tracking_id=$2, updated_at=NOW() WHERE id=$3 RETURNING *`;
+                queryParams = [status, tracking_id, req.params.id];
+            }
+        }
+
+        const { rows } = await pool.query(queryStr, queryParams);
         if (!rows.length) return res.status(404).json({ error: 'Order not found' });
 
         // Auto-sync with ParcelsApp immediately upon admin save
