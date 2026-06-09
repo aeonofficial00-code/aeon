@@ -412,11 +412,13 @@
             let icons = ['check', 'package', 'truck', 'home'];
             let currentIndex = 0;
 
-            if (status === 'cancelled') {
+            if (status === 'cancelled' || status === 'refunding' || status === 'refunded') {
                 steps = ['ordered', 'cancelled', 'refunding', 'refunded'];
                 labels = ['Ordered', 'Cancelled', 'Refunding', 'Refunded'];
                 icons = ['check', 'x-circle', 'refresh-ccw', 'check-circle'];
-                currentIndex = 1; // Stop at Cancelled
+                if (status === 'cancelled') currentIndex = 1;
+                else if (status === 'refunding') currentIndex = 2;
+                else if (status === 'refunded') currentIndex = 3;
             } else {
                 if (status === 'paid' || status === 'pending') currentIndex = 0;
                 else if (status === 'processing') currentIndex = 1;
@@ -448,7 +450,7 @@
             const progressEl = document.getElementById('stepper-progress');
             progressEl.style.width = `${pct}%`;
 
-            if (status === 'cancelled') {
+            if (status === 'cancelled' || status === 'refunding' || status === 'refunded') {
                 progressEl.style.background = '#d9534f';
                 const cancelCircle = document.querySelector('#step-cancelled .step-circle');
                 const cancelLabel = document.querySelector('#step-cancelled .step-label');
