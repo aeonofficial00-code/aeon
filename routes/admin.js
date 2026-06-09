@@ -56,7 +56,7 @@ router.get('/orders', auth, async (req, res) => {
 
 // ── PATCH /api/admin/orders/:id/status – update delivery status ───────────────
 router.patch('/orders/:id/status', auth, express.json(), async (req, res) => {
-    const allowed = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+    const allowed = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunding', 'refunded'];
     const { status } = req.body;
     if (!allowed.includes(status)) return res.status(400).json({ error: 'Invalid status' });
     try {

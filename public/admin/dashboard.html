@@ -300,11 +300,67 @@
             text-transform: uppercase;
         }
 
-        .badge-featured {
+        .filter-btn:hover,
+        .filter-btn.active {
             background: rgba(201, 169, 110, 0.15);
             color: var(--gold);
-            border: 1px solid rgba(201, 169, 110, 0.2);
+            border-color: rgba(201, 169, 110, 0.4);
         }
+
+        /* Flowchart styles for admin modal */
+        .stepper-progress {
+            position: absolute;
+            top: 24px;
+            left: 0;
+            height: 2px;
+            background: var(--gold);
+            transition: 0.5s ease;
+            z-index: 1;
+        }
+        .stepper-bg {
+            position: absolute;
+            top: 24px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            z-index: 0;
+        }
+        .step {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+        .step-circle {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--dark);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            transition: 0.4s;
+        }
+        .step-circle svg { width: 20px; height: 20px; }
+        .step-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+            transition: 0.4s;
+        }
+        .step.completed .step-circle { border-color: var(--gold); background: rgba(201, 169, 110, 0.1); color: var(--gold); }
+        .step.completed .step-label { color: var(--text); }
+        .step.active .step-circle { border-color: var(--gold); background: var(--gold); color: var(--dark); box-shadow: 0 0 20px rgba(201, 169, 110, 0.3); }
+        .step.active .step-label { color: var(--gold); font-weight: 600; }
 
         .badge-normal {
             background: rgba(255, 255, 255, 0.05);
@@ -1065,11 +1121,11 @@
                 tbody.innerHTML = `<tr><td colspan="8" style="padding:40px;text-align:center;color:var(--text-muted);">No orders yet.</td></tr>`;
                 return;
             }
-            const statusColors = { paid: '#5cb85c', pending: '#f0ad4e', processing: '#5bc0de', shipped: '#9E7A40', delivered: '#5cb85c', cancelled: '#d9534f' };
+            const statusColors = { paid: '#5cb85c', pending: '#f0ad4e', processing: '#5bc0de', shipped: '#9E7A40', delivered: '#5cb85c', cancelled: '#d9534f', refunding: '#f0ad4e', refunded: '#5bc0de' };
             tbody.innerHTML = orders.map(o => {
                 const addr = o.address || {};
                 const items = o.items || [];
-                const statusOpts = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+                const statusOpts = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunding', 'refunded'];
                 return `<tr>
                     <td style="font-size:11px;color:var(--gold);font-family:monospace;">#${o.id.slice(0, 8).toUpperCase()}</td>
                     <td>
@@ -1122,7 +1178,7 @@
             if (!o) return;
             const addr = o.address || {};
             const items = o.items || [];
-            const statusColors = { paid: '#5cb85c', pending: '#f0ad4e', processing: '#5bc0de', shipped: '#c9a96e', delivered: '#5cb85c', cancelled: '#d9534f' };
+            const statusColors = { paid: '#5cb85c', pending: '#f0ad4e', processing: '#5bc0de', shipped: '#c9a96e', delivered: '#5cb85c', cancelled: '#d9534f', refunding: '#f0ad4e', refunded: '#5bc0de' };
             const sc = statusColors[o.status] || '#888';
 
             // Build items HTML
@@ -1159,8 +1215,23 @@
                         background:rgba(${getStatusRgb(o.status)},0.12);color:${sc};border:1px solid rgba(${getStatusRgb(o.status)},0.3);">${o.status}</span>
                 </div>
 
+                <!-- Tracking Flowchart -->
+                <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(201,169,110,0.1);border-radius:14px;padding:24px;margin-bottom:24px;">
+                    <h4 style="font-size:13px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-bottom:24px;font-weight:600;">Tracking Status</h4>
+                    <div class="stepper-wrap" style="position:relative;display:flex;justify-content:space-between;align-items:flex-start;max-width:600px;margin:0 auto;padding-bottom:16px;">
+                        <div class="stepper-bg"></div>
+                        <div id="admin-stepper" style="width:100%;position:relative;display:flex;justify-content:space-between;"></div>
+                    </div>
+                </div>
+
+                <!-- Items -->
+                <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(201,169,110,0.1);border-radius:14px;padding:18px;">
+                    <h4 style="font-size:12px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;">Order Items</h4>
+                    ${itemsHtml}
+                </div>
+
                 <!-- Two-col: Customer Info + Delivery Address -->
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;margin-top:24px;">
                     <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(201,169,110,0.1);border-radius:14px;padding:18px;">
                         <p style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;">Customer</p>
                         <p style="font-weight:600;font-size:15px;color:var(--text);margin-bottom:4px;">${addr.name || '—'}</p>
@@ -1175,12 +1246,6 @@
                             ${addr.country || ''}
                         </p>
                     </div>
-                </div>
-
-                <!-- Items -->
-                <div style="margin-bottom:24px;">
-                    <p style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;">Items (${items.length})</p>
-                    ${itemsHtml}
                 </div>
 
                 <!-- Price Summary -->
@@ -1213,13 +1278,75 @@
                 <!-- Status Change -->
                 <div style="display:flex;align-items:center;gap:10px;">
                     <select id="od-status-${o.id}" style="flex:1;background:rgba(${getStatusRgb(o.status)},0.08);border:1px solid rgba(${getStatusRgb(o.status)},0.3);color:${sc};border-radius:10px;padding:10px 14px;font-size:12px;letter-spacing:1px;text-transform:uppercase;outline:none;cursor:pointer;">
-                        ${['pending', 'processing', 'shipped', 'delivered', 'cancelled'].map(s => `<option value="${s}" ${s === o.status ? 'selected' : ''}>${s}</option>`).join('')}
+                        ${['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunding', 'refunded'].map(s => `<option value="${s}" ${s === o.status ? 'selected' : ''}>${s}</option>`).join('')}
                     </select>
                     <button onclick="updateOrderStatusFromDetail('${o.id}')" class="btn btn-gold" style="white-space:nowrap;">Save Status</button>
                     <a href="/api/orders/${o.id}/invoice" target="_blank" class="btn btn-outline" style="white-space:nowrap;text-decoration:none;display:flex;align-items:center;justify-content:center;padding:10px 14px;">Download Invoice</a>
                 </div>
             `;
+            
+            updateAdminStepper(o.status);
+
             document.getElementById('order-detail-modal').style.display = 'flex';
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function updateAdminStepper(status) {
+            let steps = ['ordered', 'processing', 'shipped', 'delivered'];
+            let labels = ['Ordered', 'Processing', 'Shipped', 'Delivered'];
+            let icons = ['check', 'package', 'truck', 'home'];
+            let currentIndex = 0;
+
+            if (status === 'cancelled' || status === 'refunding' || status === 'refunded') {
+                steps = ['ordered', 'cancelled', 'refunding', 'refunded'];
+                labels = ['Ordered', 'Cancelled', 'Refunding', 'Refunded'];
+                icons = ['check', 'x-circle', 'refresh-ccw', 'check-circle'];
+                if (status === 'cancelled') currentIndex = 1;
+                else if (status === 'refunding') currentIndex = 2;
+                else if (status === 'refunded') currentIndex = 3;
+            } else {
+                if (status === 'paid' || status === 'pending') currentIndex = 0;
+                else if (status === 'processing') currentIndex = 1;
+                else if (status === 'shipped') currentIndex = 2;
+                else if (status === 'delivered') currentIndex = 3;
+            }
+
+            const stepper = document.getElementById('admin-stepper');
+            if (!stepper) return;
+            stepper.innerHTML = `
+                <div class="stepper-progress" id="admin-stepper-progress" style="width: 0%;"></div>
+                ${steps.map((step, i) => `
+                <div class="step" id="admin-step-${step}">
+                    <div class="step-circle"><i data-lucide="${icons[i]}"></i></div>
+                    <div class="step-label">${labels[i]}</div>
+                </div>
+                `).join('')}
+            `;
+            if (window.lucide) lucide.createIcons();
+
+            for (let i = 0; i <= currentIndex; i++) {
+                const el = document.getElementById('admin-step-' + steps[i]);
+                if (el) {
+                    el.classList.add(i === currentIndex ? 'active' : 'completed');
+                    if (i < currentIndex) el.classList.remove('active');
+                }
+            }
+            
+            const pct = (currentIndex / (steps.length - 1)) * 100;
+            const progressEl = document.getElementById('admin-stepper-progress');
+            if (progressEl) progressEl.style.width = `${pct}%`;
+
+            if (status === 'cancelled' || status === 'refunding' || status === 'refunded') {
+                if (progressEl) progressEl.style.background = '#d9534f';
+                const cancelCircle = document.querySelector('#admin-step-cancelled .step-circle');
+                const cancelLabel = document.querySelector('#admin-step-cancelled .step-label');
+                if (cancelCircle) {
+                    cancelCircle.style.background = '#d9534f';
+                    cancelCircle.style.borderColor = '#d9534f';
+                    cancelCircle.style.color = 'var(--dark)';
+                }
+                if (cancelLabel) cancelLabel.style.color = '#d9534f';
+            }
         }
 
         function closeOrderDetail() {
