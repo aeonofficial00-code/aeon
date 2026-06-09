@@ -176,7 +176,12 @@ router.get('/:id/tracking', async (req, res) => {
             return res.json({ states: tracking_data || null, error: data.error });
         }
 
-        const states = data.shipments && data.shipments[0] && data.shipments[0].states ? data.shipments[0].states : null;
+        const shipment = data.shipments && data.shipments[0];
+        const states = shipment && shipment.states ? shipment.states : null;
+
+        if (shipment && shipment.status === 'delivered') {
+            await pool.query("UPDATE orders SET status='delivered' WHERE id=$1 AND status != 'delivered'", [req.params.id]);
+        }
 
         await pool.query(
             `UPDATE orders SET tracking_data=$1, tracking_updated_at=NOW() WHERE id=$2`,
