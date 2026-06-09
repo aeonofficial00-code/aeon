@@ -349,6 +349,9 @@ button {
   align-items: center;
   gap: 40px;
   list-style: none;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .nav-links a {
