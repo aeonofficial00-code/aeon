@@ -403,22 +403,38 @@
             }).join('');
 
             // Tracking
-            if (order.status === 'cancelled') {
-                document.getElementById('tracking-container').style.display = 'none';
-                document.getElementById('cancelled-alert').style.display = 'block';
-            } else {
-                updateStepper(order.status);
-            }
+            updateStepper(order.status, order);
         }
 
-        function updateStepper(status) {
-            const steps = ['ordered', 'processing', 'shipped', 'delivered'];
-            // map db status to step index
+        function updateStepper(status, order) {
+            let steps = ['ordered', 'processing', 'shipped', 'delivered'];
+            let labels = ['Ordered', 'Processing', 'Shipped', 'Delivered'];
+            let icons = ['check', 'package', 'truck', 'home'];
             let currentIndex = 0;
-            if (status === 'paid' || status === 'pending') currentIndex = 0;
-            else if (status === 'processing') currentIndex = 1;
-            else if (status === 'shipped') currentIndex = 2;
-            else if (status === 'delivered') currentIndex = 3;
+
+            if (status === 'cancelled') {
+                steps = ['ordered', 'cancelled', 'refunding', 'refunded'];
+                labels = ['Ordered', 'Cancelled', 'Refunding', 'Refunded'];
+                icons = ['check', 'x-circle', 'refresh-ccw', 'check-circle'];
+                currentIndex = 1; // Stop at Cancelled
+            } else {
+                if (status === 'paid' || status === 'pending') currentIndex = 0;
+                else if (status === 'processing') currentIndex = 1;
+                else if (status === 'shipped') currentIndex = 2;
+                else if (status === 'delivered') currentIndex = 3;
+            }
+
+            const stepper = document.getElementById('stepper');
+            stepper.innerHTML = `
+                <div class="stepper-progress" id="stepper-progress" style="width: 0%;"></div>
+                ${steps.map((step, i) => `
+                <div class="step" id="step-${step}">
+                    <div class="step-circle"><i data-lucide="${icons[i]}"></i></div>
+                    <div class="step-label">${labels[i]}</div>
+                </div>
+                `).join('')}
+            `;
+            if (window.lucide) lucide.createIcons();
 
             for (let i = 0; i <= currentIndex; i++) {
                 const el = document.getElementById('step-' + steps[i]);
@@ -428,9 +444,21 @@
                 }
             }
             
-            // Calculate progress bar width based on 4 steps (0%, 33%, 66%, 100%)
             const pct = (currentIndex / (steps.length - 1)) * 100;
-            document.getElementById('stepper-progress').style.width = `${pct}%`;
+            const progressEl = document.getElementById('stepper-progress');
+            progressEl.style.width = `${pct}%`;
+
+            if (status === 'cancelled') {
+                progressEl.style.background = '#d9534f';
+                const cancelCircle = document.querySelector('#step-cancelled .step-circle');
+                const cancelLabel = document.querySelector('#step-cancelled .step-label');
+                if (cancelCircle) {
+                    cancelCircle.style.background = '#d9534f';
+                    cancelCircle.style.borderColor = '#d9534f';
+                    cancelCircle.style.color = 'var(--dark)';
+                }
+                if (cancelLabel) cancelLabel.style.color = '#d9534f';
+            }
         }
 
         async function cancelOrder(orderId, event) {
