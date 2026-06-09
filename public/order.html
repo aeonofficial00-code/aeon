@@ -114,6 +114,61 @@
             margin-top: 4px;
         }
 
+        /* Live Timeline */
+        .live-timeline {
+            margin-top: 40px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .live-timeline h3 {
+            font-size: 14px;
+            color: var(--gold);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 24px;
+            font-weight: 600;
+        }
+        .timeline-item {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .timeline-item:last-child { margin-bottom: 0; }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 20px;
+            bottom: -20px;
+            width: 2px;
+            background: rgba(255,255,255,0.08);
+            z-index: 1;
+        }
+        .timeline-item:last-child::before { display: none; }
+        .timeline-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--gold);
+            box-shadow: 0 0 10px rgba(201,169,110,0.4);
+            margin-top: 4px;
+            z-index: 2;
+            flex-shrink: 0;
+        }
+        .timeline-item.past .timeline-dot {
+            background: var(--text-muted);
+            box-shadow: none;
+        }
+        .timeline-content { flex: 1; }
+        .timeline-status { font-size: 14px; font-weight: 600; color: var(--text-light); margin-bottom: 4px; }
+        .timeline-item.past .timeline-status { color: var(--text-muted); font-weight: 500; }
+        .timeline-location { font-size: 12px; color: var(--text-muted); margin-bottom: 2px; }
+        .timeline-date { font-size: 11px; color: rgba(255,255,255,0.4); }
+
         /* Grid layout for info boxes */
         .info-grid {
             display: grid;
@@ -286,6 +341,7 @@
                     <div class="step-label">Delivered</div>
                 </div>
             </div>
+            <div id="live-timeline-container"></div>
         </div>
 
         <div class="info-grid">
@@ -348,10 +404,39 @@
                 if (!res.ok) throw new Error('Order not found or unauthorized');
                 const order = await res.json();
                 renderOrder(order);
+
+                // Fetch live tracking if available
+                const trackRes = await fetch(`/api/orders/${orderId}/tracking`);
+                if (trackRes.ok) {
+                    const tracking = await trackRes.json();
+                    if (tracking.states && tracking.states.length > 0) {
+                        renderTrackingTimeline(tracking.states);
+                    }
+                }
             } catch (err) {
                 document.querySelector('.wrap').innerHTML = `<div style="text-align:center;padding:40px;"><h2>Oops!</h2><p style="color:var(--text-muted);margin-top:10px;">${err.message}</p></div>`;
             }
         });
+
+        function renderTrackingTimeline(states) {
+            const container = document.getElementById('live-timeline-container');
+            const html = `
+                <div class="live-timeline">
+                    <h3>Live Courier Updates</h3>
+                    ${states.map((state, i) => `
+                        <div class="timeline-item ${i === 0 ? 'current' : 'past'}">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-status">${state.status}</div>
+                                ${state.location ? `<div class="timeline-location">${state.location}</div>` : ''}
+                                <div class="timeline-date">${new Date(state.date).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            container.innerHTML = html;
+        }
 
         function renderOrder(order) {
             const dateStr = new Date(order.created_at).toLocaleDateString('en-IN', {

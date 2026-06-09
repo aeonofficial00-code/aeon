@@ -143,6 +143,52 @@ router.get('/:id', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ── GET /api/orders/:id/tracking ──────────────────────────────────────────────
+router.get('/:id/tracking', async (req, res) => {
+    try {
+        const { rows } = await pool.query(`SELECT tracking_id, tracking_data, tracking_updated_at FROM orders WHERE id=$1`, [req.params.id]);
+        if (!rows.length) return res.status(404).json({ error: 'Order not found' });
+        
+        const { tracking_id, tracking_data, tracking_updated_at } = rows[0];
+        if (!tracking_id) return res.json({ states: null });
+
+        const isFresh = tracking_updated_at && (new Date() - new Date(tracking_updated_at)) < 3 * 60 * 60 * 1000;
+        
+        if (tracking_data && isFresh) {
+            return res.json({ states: tracking_data });
+        }
+
+        const apiKey = process.env.PARCELSAPP_API_KEY;
+        if (!apiKey) return res.status(500).json({ error: 'Missing ParcelsApp API Key' });
+
+        const resp = await fetch('https://parcelsapp.com/api/v3/shipments/tracking', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                shipments: [{ trackingId: tracking_id, destinationCountry: 'India' }],
+                language: 'en',
+                apiKey
+            })
+        });
+        const data = await resp.json();
+        
+        if (data.error) {
+            return res.json({ states: tracking_data || null, error: data.error });
+        }
+
+        const states = data.shipments && data.shipments[0] && data.shipments[0].states ? data.shipments[0].states : null;
+
+        await pool.query(
+            `UPDATE orders SET tracking_data=$1, tracking_updated_at=NOW() WHERE id=$2`,
+            [JSON.stringify(states), req.params.id]
+        );
+
+        res.json({ states });
+    } catch (err) { 
+        res.status(500).json({ error: err.message }); 
+    }
+});
+
 // ── GET /api/orders/:id/invoice ───────────────────────────────────────────────
 router.get('/:id/invoice', async (req, res) => {
     try {

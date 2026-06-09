@@ -46,8 +46,8 @@ function auth(req, res, next) {
 router.get('/orders', auth, async (req, res) => {
     try {
         const { rows } = await pool.query(
-            `SELECT id, user_id, guest_email, items, address, subtotal, delivery_charge, total,
-              status, razorpay_order_id, razorpay_payment_id, created_at
+            `SELECT id, user_id, guest_email, items, address, subtotal, delivery_charge, total, 
+              status, razorpay_order_id, razorpay_payment_id, courier_name, tracking_id, created_at
        FROM orders ORDER BY created_at DESC`
         );
         res.json(rows);
@@ -57,12 +57,12 @@ router.get('/orders', auth, async (req, res) => {
 // ── PATCH /api/admin/orders/:id/status – update delivery status ───────────────
 router.patch('/orders/:id/status', auth, express.json(), async (req, res) => {
     const allowed = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunding', 'refunded'];
-    const { status } = req.body;
+    const { status, tracking_id } = req.body;
     if (!allowed.includes(status)) return res.status(400).json({ error: 'Invalid status' });
     try {
         await pool.query(
-            `UPDATE orders SET status=$1, updated_at=NOW() WHERE id=$2`,
-            [status, req.params.id]
+            `UPDATE orders SET status=$1, tracking_id=COALESCE($2, tracking_id), updated_at=NOW() WHERE id=$3`,
+            [status, tracking_id || null, req.params.id]
         );
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }

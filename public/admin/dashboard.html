@@ -1276,8 +1276,9 @@
                 </div>` : ''}
 
                 <!-- Status Change -->
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <select id="od-status-${o.id}" style="flex:1;background:rgba(${getStatusRgb(o.status)},0.08);border:1px solid rgba(${getStatusRgb(o.status)},0.3);color:${sc};border-radius:10px;padding:10px 14px;font-size:12px;letter-spacing:1px;text-transform:uppercase;outline:none;cursor:pointer;">
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                    <input type="text" id="od-tracking-${o.id}" placeholder="Courier Tracking ID (e.g. DTDC AWB)" value="${o.tracking_id || ''}" style="flex:1;min-width:180px;background:rgba(255,255,255,0.05);border:1px solid rgba(201,169,110,0.3);color:var(--text);border-radius:10px;padding:10px 14px;font-size:12px;outline:none;" />
+                    <select id="od-status-${o.id}" style="flex:1;min-width:140px;background:rgba(${getStatusRgb(o.status)},0.08);border:1px solid rgba(${getStatusRgb(o.status)},0.3);color:${sc};border-radius:10px;padding:10px 14px;font-size:12px;letter-spacing:1px;text-transform:uppercase;outline:none;cursor:pointer;">
                         ${['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunding', 'refunded'].map(s => `<option value="${s}" ${s === o.status ? 'selected' : ''}>${s}</option>`).join('')}
                     </select>
                     <button onclick="updateOrderStatusFromDetail('${o.id}')" class="btn btn-gold" style="white-space:nowrap;">Save Status</button>
@@ -1355,12 +1356,14 @@
 
         async function updateOrderStatusFromDetail(orderId) {
             const select = document.getElementById('od-status-' + orderId);
+            const trackInput = document.getElementById('od-tracking-' + orderId);
             const newStatus = select?.value;
+            const trackingId = trackInput?.value;
             if (!newStatus) return;
             const res = await fetch(`/api/admin/orders/${orderId}/status`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', 'x-admin-token': getToken() },
-                body: JSON.stringify({ status: newStatus })
+                body: JSON.stringify({ status: newStatus, tracking_id: trackingId })
             });
             if (res.ok) {
                 closeOrderDetail();
