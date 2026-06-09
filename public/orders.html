@@ -355,7 +355,10 @@
             <div>
                 <div class="order-total"><small>Total Paid</small>₹${parseFloat(order.total).toLocaleString('en-IN')}</div>
                 ${order.delivery_charge == 0 ? '<div style="font-size:10px;color:#5cb85c;margin-top:3px;letter-spacing:0.5px;">Free Delivery</div>' : ''}
-                ${canCancel ? `<button class="btn btn-outline" style="margin-top:12px;padding:6px 14px;font-size:11px;letter-spacing:1px;border-color:rgba(217,83,79,0.5);color:#d9534f;" onclick="cancelOrder('${order.id}')">Cancel Order</button>` : ''}
+                <div style="display:flex;gap:8px;margin-top:12px;">
+                    <a href="/order.html?id=${order.id}" class="btn btn-gold" style="padding:6px 14px;font-size:11px;letter-spacing:1px;text-decoration:none;">View Details</a>
+                    ${canCancel ? `<button class="btn btn-outline" style="padding:6px 14px;font-size:11px;letter-spacing:1px;border-color:rgba(217,83,79,0.5);color:#d9534f;" onclick="cancelOrder('${order.id}')">Cancel</button>` : ''}
+                </div>
             </div>
             <div class="order-addr">
                 📦 ${addr.name || ''}<br />
