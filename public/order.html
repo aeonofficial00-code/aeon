@@ -13,8 +13,8 @@
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: var(--dark); color: var(--text); font-family: var(--font-body); min-height: 100vh; }
-        .wrap { max-width: 900px; margin: 0 auto; padding: calc(var(--nav-height)+40px) 24px 80px; }
+        body { background: var(--dark); color: var(--text-light); font-family: var(--font-body); min-height: 100vh; }
+        .wrap { max-width: 900px; margin: 0 auto; padding: 120px 24px 80px; }
         
         .breadcrumb { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
         .breadcrumb a { color: var(--gold); text-decoration: none; }
@@ -132,7 +132,7 @@
         .info-title {
             font-size: 15px;
             font-weight: 600;
-            color: var(--text);
+            color: var(--text-light);
             margin-bottom: 16px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
             padding-bottom: 12px;
@@ -145,7 +145,7 @@
         }
 
         .info-content strong {
-            color: var(--text);
+            color: var(--text-light);
             font-weight: 500;
         }
 
@@ -215,7 +215,7 @@
         }
 
         .item-details { flex: 1; }
-        .item-name { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+        .item-name { font-size: 14px; font-weight: 500; color: var(--text-light); margin-bottom: 4px; }
         .item-specs { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
         .item-price { font-size: 14px; color: var(--gold); font-weight: 600; }
         
@@ -351,7 +351,7 @@
             
             const addr = order.address || {};
             document.getElementById('shipping-address').innerHTML = `
-                <p style="margin-bottom:4px;font-weight:600;color:var(--text);">${addr.name}</p>
+                <p style="margin-bottom:4px;font-weight:600;color:var(--text-light);">${addr.name}</p>
                 <p style="margin-bottom:4px;">${addr.line1}</p>
                 ${addr.line2 ? `<p style="margin-bottom:4px;">${addr.line2}</p>` : ''}
                 <p style="margin-bottom:12px;">${addr.city}, ${addr.state} ${addr.pincode}</p>
