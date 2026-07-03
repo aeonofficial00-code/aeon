@@ -13,8 +13,9 @@ const rzp = new Razorpay({
     key_secret: process.env.RAZORPAY_KEY_SECRET || ''
 });
 
-const DELIVERY_THRESHOLD = 0;   // site-wide free shipping
-const DELIVERY_CHARGE = 0;    // ₹0 delivery for all orders
+const KERALA_BASE        = 70;   // ₹70 base delivery for Kerala
+const NATIONAL_BASE      = 120;  // ₹120 base delivery outside Kerala
+const EXTRA_ITEM_RATE    = 10;   // ₹10 per additional item (volumetric offset)
 
 // ── POST /api/orders/create ───────────────────────────────────────────────────
 // Body: { items: [{id,name,price,qty,thumb}], address: {name,phone,line1,city,state,pincode}, email? }
@@ -40,7 +41,11 @@ router.post('/create', express.json(), async (req, res) => {
             return { ...item, price: dbPrice, qty };
         });
 
-        const deliveryCharge = subtotal >= DELIVERY_THRESHOLD ? 0 : DELIVERY_CHARGE;
+        // Zone-based + volumetric delivery charge
+        const totalItems    = validatedItems.reduce((s, i) => s + i.qty, 0);
+        const isKerala      = (address?.state || '').trim() === 'Kerala';
+        const baseCharge    = isKerala ? KERALA_BASE : NATIONAL_BASE;
+        const deliveryCharge = baseCharge + Math.max(0, totalItems - 1) * EXTRA_ITEM_RATE;
         const total = subtotal + deliveryCharge;
         const totalPaise = Math.round(total * 100); // Razorpay uses paise
 

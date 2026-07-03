@@ -112,9 +112,8 @@ function renderCartItems() {
   const boxPrice = (_selectedBox && !allBangles) ? (_selectedBox.price || 0) : 0;
 
   const subtotal = cart.reduce((s, i) => s + parseFloat(i.price) * (i.qty || 1), 0);
-  const deliveryFree = true; // site-wide free shipping
-  const delivery = 0;
-  const total = subtotal + delivery + boxPrice;
+  // Delivery is zone-based (Kerala ₹70 / National ₹120 + ₹10/extra item) — shown at checkout
+  const total = subtotal + boxPrice; // delivery excluded from cart drawer preview
 
   const totalEl = document.getElementById('cart-total');
   if (totalEl) totalEl.textContent = `₹${total.toLocaleString('en-IN')}`;
@@ -162,7 +161,7 @@ function renderCartItems() {
           <span>Subtotal</span><span>₹${subtotal.toLocaleString('en-IN')}</span>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:4px;">
-          <span>Delivery</span><span style="color:#5cb85c">FREE</span>
+          <span>Delivery</span><span style="color:var(--text-muted);font-size:11px;">Calculated at checkout</span>
         </div>
         ${!allBangles && _selectedBox && _selectedBox.price > 0 ? `
         <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:4px;">

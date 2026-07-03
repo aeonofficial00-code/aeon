@@ -470,7 +470,10 @@
 
     <script src="/js/main.js"></script>
     <script>
-        const DELIVERY_THRESHOLD = 0, DELIVERY_CHARGE = 0; // Site-wide free shipping
+        // ── Delivery charge constants (Kerala ₹70 base / National ₹120 base + ₹10/extra item)
+        const KERALA_BASE     = 70;
+        const NATIONAL_BASE   = 120;
+        const EXTRA_ITEM_RATE = 10;
         let cartItems = [];
         let _appliedCoupon = null;
         let _boxChoice = null;
@@ -496,6 +499,9 @@
             renderSummary();
             prefillUser();
             loadUserState();
+
+            // Live delivery update when state is selected
+            document.getElementById('f-state').addEventListener('change', recalcSummary);
         });
 
         function loadCart() {
@@ -520,18 +526,45 @@
             recalcSummary();
         }
 
+        function getDeliveryCharge() {
+            const state = document.getElementById('f-state').value;
+            if (!state) return null; // unknown until state is selected
+            const totalItems = cartItems.reduce((s, i) => s + (i.qty || 1), 0);
+            const base = (state === 'Kerala') ? KERALA_BASE : NATIONAL_BASE;
+            return base + Math.max(0, totalItems - 1) * EXTRA_ITEM_RATE;
+        }
+
         function recalcSummary() {
             const subtotal = cartItems.reduce((s, i) => s + parseFloat(i.price) * (i.qty || 1), 0);
-            const delivery = subtotal >= DELIVERY_THRESHOLD ? 0 : DELIVERY_CHARGE;
+            const delivery = getDeliveryCharge();
             const discount = _appliedCoupon ? _appliedCoupon.discount : 0;
             const allBangles = cartItems.every(i => (i.category || '').toLowerCase().includes('bangle'));
             const boxPrice = (!allBangles && _boxChoice) ? (_boxChoice.price || 0) : 0;
-            const total = Math.max(0, subtotal + delivery + boxPrice - discount);
+            const total = Math.max(0, subtotal + (delivery || 0) + boxPrice - discount);
 
             document.getElementById('sum-subtotal').textContent = '₹' + subtotal.toLocaleString('en-IN');
-            document.getElementById('sum-delivery').textContent = delivery === 0 ? 'FREE' : '₹' + delivery;
+
+            // Delivery display
+            const deliveryEl = document.getElementById('sum-delivery');
+            if (delivery === null) {
+                deliveryEl.textContent = 'Select state';
+                deliveryEl.style.color = 'rgba(255,255,255,0.25)';
+                deliveryEl.style.fontStyle = 'italic';
+                deliveryEl.style.fontSize = '11px';
+            } else if (delivery === 0) {
+                deliveryEl.textContent = 'FREE';
+                deliveryEl.style.color = '#5cb85c';
+                deliveryEl.style.fontStyle = '';
+                deliveryEl.style.fontSize = '';
+            } else {
+                deliveryEl.textContent = '₹' + delivery.toLocaleString('en-IN');
+                deliveryEl.style.color = '';
+                deliveryEl.style.fontStyle = '';
+                deliveryEl.style.fontSize = '';
+            }
+
             document.getElementById('sum-total').textContent = '₹' + total.toLocaleString('en-IN');
-            document.getElementById('free-delivery-note').style.display = delivery === 0 ? 'block' : 'none';
+            document.getElementById('free-delivery-note').style.display = 'none'; // no free delivery anymore
 
             // Box row
             const boxRow = document.getElementById('box-row');
@@ -604,11 +637,17 @@
 
             const btn = document.getElementById('pay-btn');
             btn.disabled = true; btn.textContent = 'Creating order…';
-            const subtotal = cartItems.reduce((s, i) => s + parseFloat(i.price) * (i.qty || 1), 0);
-            const delivery = subtotal >= DELIVERY_THRESHOLD ? 0 : DELIVERY_CHARGE;
+            const delivery = getDeliveryCharge();
+            if (delivery === null) {
+                alert('Please select your state to calculate delivery charges.');
+                btn.disabled = false; btn.textContent = 'Pay Securely';
+                document.getElementById('f-state').focus();
+                return;
+            }
             const discount = _appliedCoupon ? _appliedCoupon.discount : 0;
             const allBangles_pay = cartItems.every(i => (i.category || '').toLowerCase().includes('bangle'));
             const boxPrice = (!allBangles_pay && _boxChoice) ? (_boxChoice.price || 0) : 0;
+
 
             try {
                 const res = await fetch('/api/orders/create', {
